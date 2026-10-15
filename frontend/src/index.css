@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+/*
+  MedIntel design tokens — clinical, calm, precise.
+  Not a marketing palette: this is a data-dense tool for hospital admins
+  making resource decisions, so legibility and restraint come first.
+*/
+@theme {
+  --color-bg: #F5F7F9;
+  --color-surface: #FFFFFF;
+  --color-border: #E1E6EA;
+  --color-ink: #1E2A33;
+  --color-ink-muted: #5B6B76;
+  --color-primary: #0B6E63;
+  --color-primary-dark: #08544B;
+  --color-primary-soft: #E4F1EF;
+  --color-accent: #C98A2D;
+  --color-accent-soft: #FBF1E0;
+  --color-danger: #B5433A;
+  --color-danger-soft: #FBEBE9;
+  --color-success: #3E8E68;
+
+  --font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.tabular-figures {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

@@ -5,5 +5,11 @@ __pycache__/
 .venv/
 venv/
 node_modules/
+dist/
+build/
 .DS_Store
 *.pyc
+*.db
+.pytest_cache/
+.mypy_cache/
+*.egg-info/

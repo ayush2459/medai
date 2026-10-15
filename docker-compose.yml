@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: medintel-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: medintel
+      POSTGRES_PASSWORD: medintel
+      POSTGRES_DB: medintel
+    ports:
+      - "5432:5432"
+    volumes:
+      - medintel_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medintel"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: medintel-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+volumes:
+  medintel_pg_data:
