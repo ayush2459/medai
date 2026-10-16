@@ -54,6 +54,7 @@ class Patient(Base):
     lab_results: Mapped[list["LabResult"]] = relationship(back_populates="patient", cascade="all, delete-orphan")
     notes: Mapped[list["DoctorNote"]] = relationship(back_populates="patient", cascade="all, delete-orphan")
     vital_signs: Mapped[list["VitalSign"]] = relationship(back_populates="patient", cascade="all, delete-orphan")
+    observations: Mapped[list["Observation"]] = relationship(back_populates="patient", cascade="all, delete-orphan")
     admission_events: Mapped[list["AdmissionEvent"]] = relationship(
         back_populates="patient", cascade="all, delete-orphan"
     )

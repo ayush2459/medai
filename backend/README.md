@@ -1,6 +1,6 @@
 # MedIntel AI Backend
 
-FastAPI backend for authentication, patient records, analytics, and ICU-risk inference.
+FastAPI backend for authentication, patient records, analytics, and ICU-risk inference. The database schema also includes provenance-aware patient observations; an observation ingestion API is not implemented yet.
 
 ## Run locally
 
