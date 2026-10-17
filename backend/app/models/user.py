@@ -1,6 +1,7 @@
 import enum
 import uuid
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import Boolean, DateTime, Enum, String, func
 from sqlalchemy.dialects.postgresql import UUID
@@ -22,7 +23,7 @@ class User(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    hashed_password: Mapped[str | None] = mapped_column(String(255), nullable=True)  # nullable: OAuth-only users
+    hashed_password: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # nullable: OAuth-only users
     role: Mapped[UserRole] = mapped_column(
         Enum(UserRole, values_callable=lambda enum_cls: [e.value for e in enum_cls], name="userrole"),
         default=UserRole.DOCTOR,
@@ -31,10 +32,10 @@ class User(Base):
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_mfa_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    mfa_secret: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    mfa_secret: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
 
-    oauth_provider: Mapped[str | None] = mapped_column(String(50), nullable=True)  # e.g. "google"
-    oauth_subject: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    oauth_provider: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # e.g. "google"
+    oauth_subject: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(

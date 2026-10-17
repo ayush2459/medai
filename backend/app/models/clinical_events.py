@@ -1,6 +1,7 @@
 import enum
 import uuid
 from datetime import date, datetime
+from typing import Optional
 
 from sqlalchemy import Boolean, Date, DateTime, Enum, Float, ForeignKey, Integer, String, func
 from sqlalchemy.dialects.postgresql import UUID
@@ -30,7 +31,7 @@ class Observation(Base):
     measured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     source_type: Mapped[str] = mapped_column(String(32), nullable=False)
-    device_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    device_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     quality_status: Mapped[ObservationQualityStatus] = mapped_column(
         Enum(
             ObservationQualityStatus,
@@ -56,12 +57,12 @@ class VitalSign(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     patient_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("patients.id"), nullable=False)
 
-    heart_rate_bpm: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    systolic_bp: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    diastolic_bp: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    respiratory_rate: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    temperature_c: Mapped[float | None] = mapped_column(Float, nullable=True)
-    spo2_percent: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    heart_rate_bpm: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    systolic_bp: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    diastolic_bp: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    respiratory_rate: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    temperature_c: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    spo2_percent: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -82,10 +83,10 @@ class AdmissionEvent(Base):
     patient_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("patients.id"), nullable=False)
 
     admitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    discharged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    discharged_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     admitted_to_icu: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     ward: Mapped[str] = mapped_column(String(100), nullable=False)
-    admission_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    admission_reason: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

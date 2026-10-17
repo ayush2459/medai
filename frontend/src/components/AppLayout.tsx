@@ -47,6 +47,7 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
           <NavLink to="/dashboard">Executive Overview</NavLink>
           <NavLink to="/icu-risk">ICU Risk Check</NavLink>
           <NavLink to="/patients">Patients</NavLink>
+          <NavLink to="/glucotwin">GlucoTwin (T2D)</NavLink>
           <div className="flex items-center rounded-lg px-3 py-2 text-sm text-ink-muted/60">
             Disease Analytics
             <span className="ml-auto rounded-full bg-bg px-1.5 py-0.5 text-[10px]">Sprint 4</span>

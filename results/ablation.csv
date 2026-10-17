@@ -1,0 +1,9 @@
+target,model,auroc_test,auprc_test
+hyper,ehr_only,,
+hyper,cgm_only,,
+hyper,cgm_wearable,,
+hyper,full_fusion,,
+hypo,ehr_only,,
+hypo,cgm_only,,
+hypo,cgm_wearable,,
+hypo,full_fusion,,

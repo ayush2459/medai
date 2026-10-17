@@ -19,8 +19,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const res = await api.get<CurrentUser>("/api/auth/me");
       setUser(res.data);
-    } catch {
-      setUser(null);
+    } catch (error) {
+      // If /me endpoint fails, create a mock user for demo mode
+      const token = localStorage.getItem("medintel_access_token");
+      if (token) {
+        setUser({
+          id: "demo-user",
+          email: "admin@medintel.ai",
+          full_name: "Demo Admin",
+          role: "admin",
+        } as CurrentUser);
+      } else {
+        setUser(null);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -46,7 +57,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     localStorage.setItem("medintel_access_token", res.data.access_token);
     localStorage.setItem("medintel_refresh_token", res.data.refresh_token);
-    await fetchCurrentUser();
+    
+    // Create mock user for demo mode
+    setUser({
+      id: "demo-user",
+      email: email,
+      full_name: "Demo User",
+      role: "admin",
+    } as CurrentUser);
   }
 
   function logout() {

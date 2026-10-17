@@ -1,0 +1,182 @@
+# rules/rules_v1.yaml
+# ====================
+# Versioned investigation suggestion rules for GlucoTwin.
+#
+# IMPORTANT DISCLAIMER
+# --------------------
+# ALL intervals and criteria below are PLACEHOLDER DEFAULTS based on
+# commonly cited diabetes monitoring practice. They MUST be reviewed
+# and confirmed by a qualified clinician against:
+#   - ADA Standards of Care in Diabetes (current year edition)
+#   - ICMR and RSSDI Indian diabetes guidelines
+#   - Applicable local hospital protocols
+#
+# Until clinician review is complete, every rule carries
+# review_status: "pending clinician review" and the dashboard
+# labels all suggestions as candidates, never orders.
+#
+# Schema
+# ------
+# id          : unique rule identifier
+# version     : increments on any criteria change
+# name        : short display name
+# description : what the rule checks
+# trigger     : the twin-state or EHR fields checked
+# criteria    : human-readable condition expression (evaluated in engine.py)
+# output      : text shown to the clinician
+# source_name : guideline document name
+# source_url  : canonical URL (re-check before final submission)
+# review_status: "pending clinician review" | "clinician reviewed"
+# active      : whether the rule is enabled (bool)
+
+rules:
+
+  - id: R1
+    version: "1.0"
+    name: "HbA1c recency check"
+    description: >
+      Reviews whether a repeat HbA1c is due based on the date of the
+      last recorded result and whether glycaemic target was met.
+    trigger:
+      - last_hba1c_date
+    criteria: >
+      If last_hba1c_date is NULL → "HbA1c date not recorded".
+      If < 3 months ago → "Recent result available, review before repeating".
+      If 3–6 months ago and target met → "Routine recheck may be due".
+      If > 3 months and not at target, or > 6 months → "HbA1c due".
+    # Placeholder interval: ADA recommends every 3 months if not at goal,
+    # every 6 months if stable. Verify current ADA SoC.
+    interval_months_stable: 6
+    interval_months_uncontrolled: 3
+    output:
+      due: "HbA1c appears due (> {interval} months since last result)."
+      recent: "Recent HbA1c recorded ({days_ago} days ago) – review before repeating."
+      missing: "Last HbA1c date not recorded."
+    source_name: "ADA Standards of Care in Diabetes – Glycaemic Assessment"
+    source_url: "https://diabetesjournals.org/care/issue/47/Supplement_1"
+    review_status: "pending clinician review"
+    active: true
+
+  - id: R2
+    version: "1.0"
+    name: "Kidney function (eGFR + UACR)"
+    description: >
+      Annual check of eGFR and UACR to monitor for diabetic nephropathy.
+    trigger:
+      - last_egfr_date
+    criteria: >
+      If last_egfr_date is NULL → "eGFR / UACR date not recorded".
+      If > 12 months ago → "Annual kidney check appears due".
+      Otherwise → "Recent".
+    # Placeholder interval: ADA recommends at least annual for all T2D patients.
+    interval_months: 12
+    output:
+      due: "Annual kidney check (eGFR + UACR) appears due (> 12 months since last)."
+      recent: "Kidney function check recorded {days_ago} days ago – appears recent."
+      missing: "Last eGFR/UACR date not recorded."
+    source_name: "ADA Standards of Care in Diabetes – CKD"
+    source_url: "https://diabetesjournals.org/care/issue/47/Supplement_1"
+    review_status: "pending clinician review"
+    active: true
+
+  - id: R3
+    version: "1.0"
+    name: "Lipid profile"
+    description: >
+      Annual (or more frequent for elevated CV risk) lipid profile check.
+    trigger:
+      - last_lipid_date
+    criteria: >
+      If last_lipid_date is NULL → "Lipid profile date not recorded".
+      If > 12 months ago → "Lipid profile appears due".
+      Otherwise → "Recent".
+    # Placeholder interval: ADA / Indian lipid guidance generally recommend
+    # annual check for managed patients. More frequent for those on statin therapy
+    # or with elevated LDL. Verify with current Indian guidelines.
+    interval_months: 12
+    output:
+      due: "Lipid profile appears due (> 12 months since last)."
+      recent: "Lipid profile recorded {days_ago} days ago – appears recent."
+      missing: "Last lipid profile date not recorded."
+    source_name: "ADA Standards of Care – Lipids; Indian lipid guidance (verify)"
+    source_url: "https://diabetesjournals.org/care/issue/47/Supplement_1"
+    review_status: "pending clinician review"
+    active: true
+
+  - id: R4
+    version: "1.0"
+    name: "Eye and foot referral reminders"
+    description: >
+      Annual diabetic retinopathy screening and annual foot examination reminder.
+    trigger:
+      - last_eye_date
+      - last_foot_date
+    criteria: >
+      If last_eye_date is NULL or > 12 months ago → "Annual eye (retinal) screening appears due".
+      If last_foot_date is NULL or > 12 months ago → "Annual foot examination appears due".
+    # Placeholder interval: ADA recommends annual dilated eye exam and annual
+    # comprehensive foot exam for T2D. First exam at diagnosis for T2D.
+    interval_months: 12
+    output:
+      eye_due:    "Annual retinal screening appears due – consider ophthalmology referral."
+      eye_recent: "Retinal screening recorded {days_ago} days ago – appears recent."
+      eye_missing: "Last eye exam date not recorded."
+      foot_due:   "Annual foot examination appears due."
+      foot_recent: "Foot examination recorded {days_ago} days ago – appears recent."
+      foot_missing: "Last foot exam date not recorded."
+    source_name: "ADA Standards of Care – Eye and Foot Care"
+    source_url: "https://diabetesjournals.org/care/issue/47/Supplement_1"
+    review_status: "pending clinician review"
+    active: true
+
+  - id: R5
+    version: "1.0"
+    name: "CGM-triggered therapy review"
+    description: >
+      Flags the clinician for a therapy and data review when wearable
+      metrics show concerning patterns (low time-in-range or frequent
+      hypoglycaemia episodes).
+    trigger:
+      - time_in_range_7d
+      - hypo_events_14d
+    criteria: >
+      If time_in_range_7d < tir_threshold → "Time in range below threshold".
+      If hypo_events_14d >= hypo_count_threshold → "Frequent hypo events".
+    # PLACEHOLDER THRESHOLDS — must be set or confirmed by the treating clinician.
+    # Common consensus target: TIR >= 70% (3.9–10.0 mmol/L / 70–180 mg/dL).
+    # ADA/ISPAD consensus: < 1 hypo event per 2 weeks for low-risk patients.
+    tir_threshold: 0.70           # 70% — PLACEHOLDER, clinician-configurable
+    hypo_count_threshold: 2       # 2 events in 14 days — PLACEHOLDER
+    output:
+      low_tir:   "Time-in-range ({tir:.0%}) is below the {threshold:.0%} target. Consider therapy review."
+      high_hypo: "{count} hypoglycaemic episodes in the last 14 days. Consider therapy and data review."
+      ok:        "CGM metrics within acceptable range."
+      missing:   "CGM data not available or insufficient for this check."
+    source_name: "Consensus time-in-range targets (Battelino et al. 2019); clinician-defined thresholds"
+    source_url: "https://diabetesjournals.org/care/article/42/8/1593/36147"
+    review_status: "pending clinician review"
+    active: true
+
+  - id: R6
+    version: "1.0"
+    name: "Context override (safety rule)"
+    description: >
+      Never suppress an investigation suggestion because an older normal
+      result exists when new symptoms, a therapy change, or an active
+      high-risk alert are present.  This rule is always on.
+    trigger:
+      - any active high-risk alert
+      - new therapy change in last 30 days
+      - new symptoms noted
+    criteria: >
+      If any of the trigger conditions are true, override any 'recent'
+      status from R1–R4 with the relevant 'due' message.
+    output:
+      override: >
+        Context override active: recent result noted but a new risk context
+        (active alert / therapy change) may warrant earlier reassessment.
+        Clinical judgement required.
+    source_name: "GlucoTwin safety design rule"
+    source_url: ""
+    review_status: "always active — not pending review"
+    active: true

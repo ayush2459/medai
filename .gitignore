@@ -9,7 +9,32 @@ dist/
 build/
 .DS_Store
 *.pyc
-*.db
 .pytest_cache/
 .mypy_cache/
 *.egg-info/
+
+# ── GlucoTwin — large generated files ─────────────────────────────────────────
+# Full dataset (large — gitignore, regenerate with: make data)
+data/patients.parquet
+data/medications.parquet
+data/lab_results.parquet
+data/patients_with_flags.parquet
+data/wearable.parquet
+data/dataset.parquet
+
+# Trained model files (large — gitignore, regenerate with: make train)
+twin/models/*.pkl
+twin/models/patient_splits.json
+twin/models/medians.json
+!twin/models/.gitkeep
+
+# Twin state DB (auto-created at runtime)
+twin_state.db
+*.db
+
+# Results figures (auto-generated, keep metrics.json + ablation.csv)
+results/figures/*.png
+results/figures/*.pdf
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/

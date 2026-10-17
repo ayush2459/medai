@@ -1,6 +1,7 @@
 import enum
 import uuid
 from datetime import date, datetime
+from typing import Optional
 
 from sqlalchemy import Date, DateTime, Enum, Float, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
@@ -29,21 +30,21 @@ class Patient(Base):
         nullable=False,
     )
 
-    phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
-    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    address: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    city: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    state: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    country: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    phone: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    address: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    city: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    state: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    country: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
-    blood_type: Mapped[str | None] = mapped_column(String(5), nullable=True)
-    allergies: Mapped[str | None] = mapped_column(Text, nullable=True)
+    blood_type: Mapped[Optional[str]] = mapped_column(String(5), nullable=True)
+    allergies: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     is_admitted: Mapped[bool] = mapped_column(default=False, nullable=False)
-    ward: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    bed_number: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    ward: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    bed_number: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
 
-    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    created_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -65,11 +66,11 @@ class Diagnosis(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     patient_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("patients.id"), nullable=False)
-    icd_code: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    icd_code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     description: Mapped[str] = mapped_column(String(500), nullable=False)
-    diagnosed_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    diagnosed_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     diagnosed_at: Mapped[date] = mapped_column(Date, server_default=func.current_date())
-    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     patient: Mapped["Patient"] = relationship(back_populates="diagnoses")
 
@@ -82,9 +83,9 @@ class Prescription(Base):
     medication_name: Mapped[str] = mapped_column(String(255), nullable=False)
     dosage: Mapped[str] = mapped_column(String(100), nullable=False)
     frequency: Mapped[str] = mapped_column(String(100), nullable=False)
-    prescribed_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    prescribed_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     start_date: Mapped[date] = mapped_column(Date, server_default=func.current_date())
-    end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    end_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
 
     patient: Mapped["Patient"] = relationship(back_populates="prescriptions")
 
@@ -95,9 +96,9 @@ class LabResult(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     patient_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("patients.id"), nullable=False)
     test_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    value: Mapped[float | None] = mapped_column(Float, nullable=True)
-    unit: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    reference_range: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    value: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    unit: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    reference_range: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     is_abnormal: Mapped[bool] = mapped_column(default=False, nullable=False)
     collected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -109,7 +110,7 @@ class DoctorNote(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     patient_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("patients.id"), nullable=False)
-    author_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    author_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

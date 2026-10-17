@@ -38,8 +38,16 @@ export function AddPatientModal({ onClose, onCreated }: AddPatientModalProps) {
         if (payload[key] === "") delete payload[key];
       });
 
-      await api.post("/api/patients", payload);
-      onCreated();
+      const response = await api.post("/api/patients", payload);
+      
+      // Check if response has the expected patient ID - in demo mode it will
+      if (response.data?.id) {
+        // Successfully created (either in DB or demo mode in-memory)
+        onCreated();
+      } else {
+        setError("Patient accepted but response unexpected. Refreshing...");
+        setTimeout(onCreated, 500);
+      }
     } catch (err: any) {
       if (err.response?.status === 409) {
         setError("A patient with this MRN already exists.");

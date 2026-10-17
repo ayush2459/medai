@@ -1,0 +1,30 @@
+{
+  "_note": "Run 'make eval' to populate this file with real metrics from the trained models. All values below are placeholders until training and evaluation are run.",
+  "model_version": "lightgbm_v1",
+  "hyper": {
+    "auroc": null,
+    "auprc": null,
+    "brier_score": null,
+    "sens_at_90spec": null,
+    "mean_lead_time_min": null,
+    "positive_rate": null,
+    "n_samples": null
+  },
+  "hypo": {
+    "auroc": null,
+    "auprc": null,
+    "brier_score": null,
+    "sens_at_90spec": null,
+    "mean_lead_time_min": null,
+    "positive_rate": null,
+    "n_samples": null
+  },
+  "hyper_baselines": {
+    "persistence": { "auroc": null },
+    "linear_extrapolation": { "auroc": null }
+  },
+  "hypo_baselines": {
+    "persistence": { "auroc": null },
+    "linear_extrapolation": { "auroc": null }
+  }
+}

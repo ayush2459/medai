@@ -1,5 +1,6 @@
 import uuid
 from datetime import date, datetime
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -11,14 +12,14 @@ class PatientBase(BaseModel):
     last_name: str = Field(min_length=1, max_length=100)
     date_of_birth: date
     gender: Gender
-    phone: str | None = Field(default=None, max_length=30)
-    email: str | None = Field(default=None, max_length=255)
-    address: str | None = Field(default=None, max_length=500)
-    city: str | None = Field(default=None, max_length=100)
-    state: str | None = Field(default=None, max_length=100)
-    country: str | None = Field(default=None, max_length=100)
-    blood_type: str | None = Field(default=None, max_length=5)
-    allergies: str | None = None
+    phone: Optional[str] = Field(default=None, max_length=30)
+    email: Optional[str] = Field(default=None, max_length=255)
+    address: Optional[str] = Field(default=None, max_length=500)
+    city: Optional[str] = Field(default=None, max_length=100)
+    state: Optional[str] = Field(default=None, max_length=100)
+    country: Optional[str] = Field(default=None, max_length=100)
+    blood_type: Optional[str] = Field(default=None, max_length=5)
+    allergies: Optional[str] = None
 
 
 class PatientCreate(PatientBase):
@@ -26,19 +27,19 @@ class PatientCreate(PatientBase):
 
 
 class PatientUpdate(BaseModel):
-    first_name: str | None = Field(default=None, max_length=100)
-    last_name: str | None = Field(default=None, max_length=100)
-    phone: str | None = Field(default=None, max_length=30)
-    email: str | None = Field(default=None, max_length=255)
-    address: str | None = Field(default=None, max_length=500)
-    city: str | None = Field(default=None, max_length=100)
-    state: str | None = Field(default=None, max_length=100)
-    country: str | None = Field(default=None, max_length=100)
-    blood_type: str | None = Field(default=None, max_length=5)
-    allergies: str | None = None
-    is_admitted: bool | None = None
-    ward: str | None = Field(default=None, max_length=100)
-    bed_number: str | None = Field(default=None, max_length=20)
+    first_name: Optional[str] = Field(default=None, max_length=100)
+    last_name: Optional[str] = Field(default=None, max_length=100)
+    phone: Optional[str] = Field(default=None, max_length=30)
+    email: Optional[str] = Field(default=None, max_length=255)
+    address: Optional[str] = Field(default=None, max_length=500)
+    city: Optional[str] = Field(default=None, max_length=100)
+    state: Optional[str] = Field(default=None, max_length=100)
+    country: Optional[str] = Field(default=None, max_length=100)
+    blood_type: Optional[str] = Field(default=None, max_length=5)
+    allergies: Optional[str] = None
+    is_admitted: Optional[bool] = None
+    ward: Optional[str] = Field(default=None, max_length=100)
+    bed_number: Optional[str] = Field(default=None, max_length=20)
 
 
 class PatientOut(PatientBase):
@@ -47,16 +48,16 @@ class PatientOut(PatientBase):
     id: uuid.UUID
     mrn: str
     is_admitted: bool
-    ward: str | None
-    bed_number: str | None
+    ward: Optional[str]
+    bed_number: Optional[str]
     created_at: datetime
     updated_at: datetime
 
 
 class DiagnosisCreate(BaseModel):
-    icd_code: str | None = Field(default=None, max_length=20)
+    icd_code: Optional[str] = Field(default=None, max_length=20)
     description: str = Field(min_length=1, max_length=500)
-    notes: str | None = None
+    notes: Optional[str] = None
 
 
 class DiagnosisOut(DiagnosisCreate):
@@ -70,7 +71,7 @@ class PrescriptionCreate(BaseModel):
     medication_name: str = Field(min_length=1, max_length=255)
     dosage: str = Field(min_length=1, max_length=100)
     frequency: str = Field(min_length=1, max_length=100)
-    end_date: date | None = None
+    end_date: Optional[date] = None
 
 
 class PrescriptionOut(PrescriptionCreate):
@@ -82,9 +83,9 @@ class PrescriptionOut(PrescriptionCreate):
 
 class LabResultCreate(BaseModel):
     test_name: str = Field(min_length=1, max_length=255)
-    value: float | None = None
-    unit: str | None = Field(default=None, max_length=50)
-    reference_range: str | None = Field(default=None, max_length=100)
+    value: Optional[float] = None
+    unit: Optional[str] = Field(default=None, max_length=50)
+    reference_range: Optional[str] = Field(default=None, max_length=100)
     is_abnormal: bool = False
 
 
@@ -103,7 +104,7 @@ class NoteOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
     patient_id: uuid.UUID
-    author_id: uuid.UUID | None
+    author_id: Optional[uuid.UUID]
     content: str
     created_at: datetime
 

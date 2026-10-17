@@ -2,7 +2,7 @@
 Security primitives: password hashing and JWT access/refresh token handling.
 """
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import Any, Optional
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -20,7 +20,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
-def _create_token(subject: str, expires_delta: timedelta, extra_claims: dict[str, Any] | None = None) -> str:
+def _create_token(subject: str, expires_delta: timedelta, extra_claims: Optional[dict[str, Any]] = None) -> str:
     now = datetime.now(timezone.utc)
     payload: dict[str, Any] = {
         "sub": subject,

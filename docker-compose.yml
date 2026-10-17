@@ -26,5 +26,33 @@ services:
     ports:
       - "6379:6379"
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: medintel-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg2://medintel:medintel@postgres:5432/medintel
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: dev-secret-change-me-in-production
+      CORS_ORIGINS: "http://localhost:5173,http://localhost:3000"
+    volumes:
+      # Mount repo root for access to twin/ rules/ data/ directories
+      - .:/workspace
+    working_dir: /workspace/backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "
+        pip install -r requirements.txt &&
+        python -m alembic upgrade head &&
+        python -m app.seed &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
 volumes:
   medintel_pg_data:
