@@ -38,13 +38,21 @@ def get_icu_risk(
     except HTTPException:
         raise
     except Exception:
-        # Demo mode: return mock ICU risk score
+        # Demo mode: return mock ICU risk score matching IcuRiskResponse schema
         risk_level = random.choice(["low", "medium", "high"])
         risk_score = {"low": 0.15, "medium": 0.45, "high": 0.75}[risk_level]
         return IcuRiskResponse(
             patient_id=patient_id,
+            probability=risk_score,
             risk_score=risk_score,
             risk_level=risk_level,
+            top_factors=[
+                "Age: Above 65",
+                "Heart rate: Elevated (90-100 bpm)",
+                "Systolic BP: Stage 1 hypertension",
+                "Diagnosis count: Multiple comorbidities",
+                "Prior admissions: Recent hospital use",
+            ],
             contributing_factors={
                 "age": "Above 65",
                 "heart_rate_bpm": "Elevated (90-100)",

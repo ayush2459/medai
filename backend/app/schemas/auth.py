@@ -1,4 +1,5 @@
 import uuid
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -24,9 +25,8 @@ class UserOut(BaseModel):
     email: EmailStr
     full_name: str
     role: UserRole
-    is_active: bool
-    is_mfa_enabled: bool
-
+    is_active: bool = True
+    is_mfa_enabled: Optional[bool] = False
 
 class TokenPair(BaseModel):
     access_token: str

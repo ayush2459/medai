@@ -44,17 +44,18 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     OAuth2-compatible password login. `username` field carries the email.
     DEMO MODE: Falls back to hardcoded credentials if DB is unavailable.
     """
-    # Demo mode: allow test login without database
-    if form_data.username == "admin@medintel.ai" and form_data.password == "changeme123":
-        # Create in-memory user for demo
+    # Sanitize input
+    username = (form_data.username or "").strip().lower()
+    password = (form_data.password or "").strip()
+
+    # Demo mode check
+    if username == "admin@medintel.ai" and password == "changeme123":
         demo_user_id = str(uuid.uuid4())
-        tokens = {
-            "access_token": create_access_token(demo_user_id, "admin"),
-            "refresh_token": create_refresh_token(demo_user_id),
-            "token_type": "bearer",
-        }
-        return tokens
-    
+        return TokenPair(
+            access_token=create_access_token(demo_user_id, "admin"),
+            refresh_token=create_refresh_token(demo_user_id),
+            token_type="bearer",
+        )
     # Try database lookup (will fail if DB not running)
     try:
         user = db.query(User).filter(User.email == form_data.username).first()
