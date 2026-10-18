@@ -85,52 +85,37 @@ export interface IcuRiskResponse {
   model_note: string;
 }
 
-// ── GlucoTwin types ──────────────────────────────────────────────────────────
+
+// GlucoTwin synthetic diabetes digital-twin API contracts.
+export interface CgmReading {
+  timestamp: string;
+  glucose_mg_dl: number;
+  [key: string]: unknown;
+}
 
 export interface GlucoPatient {
   patient_id: string;
-  age: number;
   sex: string;
+  age: number;
   bmi: number;
   diabetes_duration_years: number;
-  hypertension: boolean;
-  ckd_stage: number;
-  family_history: boolean;
-  genetic_risk_score: number;
   hba1c_latest: number | null;
   insulin_flag: boolean;
   sulfonylurea_flag: boolean;
+  hypertension: boolean;
+  ckd_stage: number;
+  genetic_risk_score: number;
 }
 
-export interface CgmReading {
-  timestamp: string;
-  glucose_mg_dl: number | null;
-  heart_rate: number | null;
-  hrv_rmssd: number | null;
-  steps: number | null;
-  sleep_stage: number | null;
-}
-
-export interface TwinState {
-  patient_id: string;
-  updated_at: string | null;
-  latest_reading_time: string | null;
-  time_in_range_7d: number | null;
-  hypo_events_14d: number | null;
-  avg_sleep_h: number | null;
-  steps_today: number | null;
-  hrv_trend: number | null;
-  last_hba1c_date: string | null;
-  last_egfr_date: string | null;
-  last_lipid_date: string | null;
-  last_eye_date: string | null;
-  last_foot_date: string | null;
-  last_prediction_hyper: number | null;
-  last_prediction_hypo: number | null;
-  data_gap_flag: boolean;
-  confidence_flag: string;
-  prediction: GlucoTwinPrediction | null;
-  investigations: InvestigationSuggestion[];
+export interface InvestigationSuggestion {
+  rule_name: string;
+  rule_id: string;
+  rule_version: string | number;
+  status: string;
+  message: string;
+  source_url?: string | null;
+  source_name: string;
+  review_status: string;
 }
 
 export interface GlucoTwinPrediction {
@@ -140,19 +125,18 @@ export interface GlucoTwinPrediction {
   risk_band_hypo: string;
   top_factors_hyper: string[];
   top_factors_hypo: string[];
-  model_version: string;
-  confidence_flag?: string;
 }
 
-export interface InvestigationSuggestion {
-  rule_id: string;
-  rule_version: string;
-  rule_name: string;
-  status: "DUE" | "RECENT" | "REFER" | "MISSING_DATA" | "OK" | "OVERRIDE";
-  message: string;
-  source_name: string;
-  source_url: string;
-  review_status: string;
-  detail: Record<string, unknown>;
+export interface TwinState {
+  patient_id?: string;
+  time_in_range_7d: number | null;
+  hypo_events_14d: number | null;
+  avg_sleep_h: number | null;
+  steps_today: number | null;
+  hrv_trend: number | null;
+  confidence_flag: string;
+  data_gap_flag: boolean;
+  prediction?: GlucoTwinPrediction | null;
+  investigations?: InvestigationSuggestion[];
+  [key: string]: unknown;
 }
-

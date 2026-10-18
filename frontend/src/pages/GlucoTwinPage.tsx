@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   CartesianGrid,
   Line,
@@ -207,7 +207,7 @@ function CgmChart({
           }}
         />
         <Tooltip
-          formatter={(v: number) => [`${v?.toFixed(0)} mg/dL`, "Glucose"]}
+          formatter={(v) => [`${Number(v ?? 0).toFixed(0)} mg/dL`, "Glucose"]}
           contentStyle={{
             borderRadius: 8,
             border: "1px solid var(--color-border)",
@@ -253,6 +253,7 @@ function RiskCard({
   factors: string[];
 }) {
   const [expanded, setExpanded] = useState(false);
+  const safeFactors = Array.isArray(factors) ? factors : [];
   const style = RISK_STYLES[band] ?? RISK_STYLES.unknown;
 
   return (
@@ -274,7 +275,7 @@ function RiskCard({
           {prob !== null ? `${(prob * 100).toFixed(0)}%` : "—"}
         </span>
       </div>
-      {factors.length > 0 && (
+      {safeFactors.length > 0 && (
         <button
           onClick={() => setExpanded((x) => !x)}
           className="mt-2 text-xs text-primary hover:underline"
@@ -284,7 +285,7 @@ function RiskCard({
       )}
       {expanded && (
         <ul className="mt-2 space-y-1">
-          {factors.map((f, i) => (
+          {safeFactors.map((f, i) => (
             <li key={i} className="text-xs text-ink">
               • {f}
             </li>
@@ -383,7 +384,7 @@ function InvestigationsTable({
   patientId: string;
   onDecision: () => void;
 }) {
-  const [pending, setPending] = useState<Record<number, string>>({});
+  const [pending] = useState<Record<number, string>>({});
   const [reasons, setReasons] = useState<Record<number, string>>({});
 
   async function submitDecision(
@@ -411,7 +412,7 @@ function InvestigationsTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border">
+    <div className="overflow-x-auto rounded-xl border border-border">
       <table className="w-full text-left text-sm">
         <thead>
           <tr className="border-b border-border bg-bg text-xs font-medium uppercase tracking-wide text-ink-muted">
@@ -559,7 +560,6 @@ export function GlucoTwinPage() {
   const [windowHours, setWindowHours] = useState(6);
   const [advancing, setAdvancing] = useState(false);
   const [auditKey, setAuditKey] = useState(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   function loadPatientData(p: GlucoPatient) {
     setLoading(true);
@@ -606,16 +606,43 @@ export function GlucoTwinPage() {
     if (patient) loadPatientData(patient);
   }
 
+
+  // Read-only Nightscout sync + automatic twin refresh every 30 seconds.
+  useEffect(() => {
+    if (!patient) return;
+    let active = true;
+    const refreshLive = async () => {
+      try {
+        if (import.meta.env.VITE_NIGHTSCOUT_ENABLED === "true") { await api.post("/api/v1/integrations/nightscout/sync", { patient_id: patient.patient_id }); }
+      } catch {
+        // Expected until the live connector is configured; keep last known data.
+      }
+      if (!active) return;
+      try {
+        const [twinRes, cgmRes] = await Promise.all([
+          api.get<TwinState>(`/api/v1/twin/${patient.patient_id}`),
+          api.get<{ readings: CgmReading[] }>(`/api/v1/patients/${patient.patient_id}/cgm`),
+        ]);
+        if (active) { setTwin(twinRes.data); setReadings(cgmRes.data.readings); }
+      } catch {
+        // Preserve last successful UI state during a temporary network issue.
+      }
+    };
+    void refreshLive();
+    const timer = window.setInterval(() => void refreshLive(), 30_000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [patient?.patient_id]);
+
   const pred = twin?.prediction ?? null;
   const investigations = twin?.investigations ?? [];
 
   return (
     <AppLayout title="GlucoTwin — Diabetes Digital Twin">
-      {/* Synthetic data banner */}
+      {/* Prototype safety banner */}
       <div className="mb-4 flex items-center gap-2 rounded-lg border border-danger/30 bg-danger-soft px-4 py-2 text-xs font-medium text-danger">
-        ⚠ SYNTHETIC DATA — NOT FOR CLINICAL USE. All patients and data are
-        entirely synthetic. This prototype does not diagnose, prescribe, or
-        order tests. All decisions remain with the clinician.
+        ⚠ SYNTHETIC DEMO DATA · PROTOTYPE — NOT FOR CLINICAL USE. Predictions are experimental and
+        must not be used to diagnose or guide treatment. Verify the data source
+        and readings. All decisions remain with the clinician.
       </div>
 
       {/* Patient selector */}
@@ -780,8 +807,14 @@ export function GlucoTwinPage() {
       )}
 
       {!patient && !loading && (
-        <div className="mt-8 text-center text-sm text-ink-muted">
-          Search for a synthetic T2D patient above to open their digital twin.
+        <div className="mt-8 rounded-xl border border-border bg-surface p-6 text-center text-sm text-ink-muted">
+          <p className="mb-2 font-semibold text-ink">Open your GlucoTwin</p>
+          <p>Select a patient above to view their digital twin.</p>
+          <p className="mt-2">
+            Live glucose readings require a configured Nightscout connection
+            and a matching patient profile. If the connection is unavailable,
+            live readings may not appear.
+          </p>
         </div>
       )}
     </AppLayout>

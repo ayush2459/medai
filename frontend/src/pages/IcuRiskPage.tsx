@@ -1,28 +1,67 @@
 import { useEffect, useState } from "react";
 import { AppLayout } from "../components/AppLayout";
 import { api } from "../lib/api";
-import type { IcuRiskResponse, PaginatedPatients, PatientSummary } from "../lib/types";
+import type {
+  IcuRiskResponse,
+  PaginatedPatients,
+  PatientSummary,
+} from "../lib/types";
 
-const RISK_STYLES: Record<string, { border: string; badgeBg: string; badgeText: string; label: string }> = {
-  low: { border: "border-l-success", badgeBg: "bg-success/10", badgeText: "text-success", label: "Low risk" },
-  medium: { border: "border-l-accent", badgeBg: "bg-accent-soft", badgeText: "text-accent", label: "Medium risk" },
-  high: { border: "border-l-danger", badgeBg: "bg-danger-soft", badgeText: "text-danger", label: "High risk" },
+const RISK_STYLES: Record<
+  string,
+  { label: string; color: string; background: string; border: string }
+> = {
+  low: {
+    label: "Low risk",
+    color: "#21805f",
+    background: "#e5f6ef",
+    border: "#c4eadb",
+  },
+  medium: {
+    label: "Moderate risk",
+    color: "#98651c",
+    background: "#fff3df",
+    border: "#f0dfbd",
+  },
+  high: {
+    label: "High risk",
+    color: "#b8474c",
+    background: "#fff0f0",
+    border: "#f0cdcf",
+  },
 };
 
 const FACTOR_LABELS: Record<string, string> = {
   age: "Age",
-  gender_male: "Gender (male)",
-  gender_female: "Gender (female)",
+  gender: "Gender",
   heart_rate_bpm: "Heart rate",
   systolic_bp: "Systolic blood pressure",
   diastolic_bp: "Diastolic blood pressure",
   respiratory_rate: "Respiratory rate",
-  temperature_c: "Temperature",
-  spo2_percent: "Blood oxygen (SpO2)",
-  diagnosis_count: "Number of diagnoses",
-  abnormal_lab_count: "Abnormal lab results",
-  prior_admission_count: "Prior admissions",
+  temperature_c: "Body temperature",
+  spo2_percent: "Oxygen saturation (SpO₂)",
+  diagnosis_count: "Diagnosis count",
+  abnormal_lab_count: "Abnormal laboratory results",
+  prior_admission_count: "Previous admissions",
 };
+
+function displayFactor(factor: unknown): string {
+  if (typeof factor === "string") {
+    return FACTOR_LABELS[factor] ?? factor.replaceAll("_", " ");
+  }
+
+  if (factor && typeof factor === "object") {
+    const item = factor as Record<string, unknown>;
+    const key = String(item.feature ?? item.name ?? item.factor ?? "");
+    const label = FACTOR_LABELS[key];
+    if (label) return label;
+
+    const readable = key.replaceAll("_", " ");
+    return readable || "Clinical factor";
+  }
+
+  return String(factor);
+}
 
 export function IcuRiskPage() {
   const [query, setQuery] = useState("");
@@ -30,150 +69,366 @@ export function IcuRiskPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
 
-  const [selectedPatient, setSelectedPatient] = useState<PatientSummary | null>(null);
+  const [selectedPatient, setSelectedPatient] =
+    useState<PatientSummary | null>(null);
   const [risk, setRisk] = useState<IcuRiskResponse | null>(null);
   const [isLoadingRisk, setIsLoadingRisk] = useState(false);
   const [riskError, setRiskError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (query.trim().length < 2) {
+    const term = query.trim();
+
+    if (term.length < 2) {
       setResults([]);
+      setSearchError(null);
+      setIsSearching(false);
       return;
     }
-    const handle = setTimeout(() => {
+
+    let cancelled = false;
+
+    const timer = window.setTimeout(async () => {
       setIsSearching(true);
       setSearchError(null);
-      api
-        .get<PaginatedPatients>("/api/patients", { params: { search: query, page: 1, page_size: 8 } })
-        .then((res) => setResults(res.data.items))
-        .catch(() => setSearchError("Could not search patients."))
-        .finally(() => setIsSearching(false));
+
+      try {
+        const response = await api.get<PaginatedPatients>("/api/patients", {
+          params: { search: term, page: 1, page_size: 8 },
+        });
+
+        if (!cancelled) {
+          setResults(response.data.items ?? []);
+        }
+      } catch {
+        if (!cancelled) {
+          setSearchError("Patient search failed. Please try again.");
+          setResults([]);
+        }
+      } finally {
+        if (!cancelled) setIsSearching(false);
+      }
     }, 300);
-    return () => clearTimeout(handle);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [query]);
 
-  function selectPatient(patient: PatientSummary) {
+  async function selectPatient(patient: PatientSummary) {
     setSelectedPatient(patient);
-    setResults([]);
     setQuery("");
+    setResults([]);
+    setSearchError(null);
     setRisk(null);
     setRiskError(null);
     setIsLoadingRisk(true);
 
-    api
-      .get<IcuRiskResponse>(`/api/ml/icu-risk/${patient.id}`)
-      .then((res) => setRisk(res.data))
-      .catch((err) => {
-        if (err.response?.status === 403) {
-          setRiskError("Your role isn't permitted to view ICU risk scores.");
-        } else if (err.response?.status === 503) {
-          setRiskError("The ICU risk model hasn't been trained yet on this server.");
-        } else {
-          setRiskError("Could not load a risk score for this patient.");
-        }
-      })
-      .finally(() => setIsLoadingRisk(false));
+    try {
+      const response = await api.get<IcuRiskResponse>(
+        `/api/ml/icu-risk/${patient.id}`,
+      );
+      setRisk(response.data);
+    } catch (err: unknown) {
+      const error = err as { response?: { status?: number } };
+      const status = error.response?.status;
+
+      if (status === 403) {
+        setRiskError("Your role isn't permitted to view ICU risk scores.");
+      } else if (status === 503) {
+        setRiskError(
+          "The ICU risk model hasn't been trained yet on this server.",
+        );
+      } else {
+        setRiskError("Unable to retrieve the risk assessment. Please retry.");
+      }
+    } finally {
+      setIsLoadingRisk(false);
+    }
   }
 
-  const style = risk ? RISK_STYLES[risk.risk_level] : null;
+  const rawLevel = risk?.risk_level;
+  const riskLevel =
+    typeof rawLevel === "string" ? rawLevel.toLowerCase() : "";
+  const style = RISK_STYLES[riskLevel];
+
+  const probability =
+    typeof risk?.probability === "number"
+      ? Math.max(0, Math.min(1, risk.probability)) * 100
+      : null;
 
   return (
-    <AppLayout title="ICU Risk Check">
-      <div className="mx-auto max-w-2xl">
-        <div className="mb-6 rounded-xl border border-border bg-surface p-4 shadow-sm">
-          <label className="mb-1 block text-sm font-medium text-ink" htmlFor="patient-search">
-            Search for a patient
-          </label>
-          <input
-            id="patient-search"
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name or MRN…"
-            className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-ink outline-none focus:border-primary"
-          />
-
-          {isSearching && <p className="mt-2 text-xs text-ink-muted">Searching…</p>}
-          {searchError && <p className="mt-2 text-xs text-danger">{searchError}</p>}
-
-          {results.length > 0 && (
-            <ul className="mt-3 divide-y divide-border overflow-hidden rounded-lg border border-border">
-              {results.map((p) => (
-                <li key={p.id}>
-                  <button
-                    onClick={() => selectPatient(p)}
-                    className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-bg"
-                  >
-                    <span className="text-ink">
-                      {p.first_name} {p.last_name}
-                    </span>
-                    <span className="tabular-figures text-xs text-ink-muted">{p.mrn}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+    <AppLayout title="ICU Risk Monitor">
+      <div className="mb-6">
+        <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-[#087f8c]">
+          <span className="h-2 w-2 rounded-full bg-[#20a58b]" />
+          CLINICAL DECISION SUPPORT
         </div>
 
-        {selectedPatient && (
-          <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <div className="text-sm font-semibold text-ink">
-                  {selectedPatient.first_name} {selectedPatient.last_name}
-                </div>
-                <div className="tabular-figures text-xs text-ink-muted">
-                  MRN {selectedPatient.mrn} · DOB {selectedPatient.date_of_birth}
-                </div>
-              </div>
-              {selectedPatient.is_admitted && (
-                <span className="rounded-full bg-primary-soft px-2 py-0.5 text-xs font-medium text-primary-dark">
-                  Admitted{selectedPatient.ward ? ` · ${selectedPatient.ward}` : ""}
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight text-[#193342]">
+              ICU risk assessment
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#738391]">
+              Select a patient to retrieve the risk estimate generated by the
+              configured model.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 rounded-xl border border-[#e3eaf0] bg-white px-3 py-2 text-xs text-[#738391]">
+            <span className="h-2 w-2 rounded-full bg-[#d99a42]" />
+            Model-assisted assessment
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-5 rounded-2xl border border-[#f0dfbd] bg-[#fffaf0] p-4 sm:p-5">
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#fff0d1] text-lg text-[#98651c]">
+            !
+          </div>
+          <div>
+            <p className="text-sm font-bold text-[#76501c]">
+              Clinical use notice
+            </p>
+            <p className="mt-1 text-xs leading-5 text-[#8c744d]">
+              This model output is decision support, not a diagnosis or a
+              substitute for clinical judgement. Review patient observations
+              and local clinical protocols before taking action.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <section className="mb-5 rounded-2xl border border-[#e3eaf0] bg-white p-5 shadow-sm sm:p-6">
+        <div className="mb-4 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e3f5f5] text-xl text-[#087f8c]">
+            ⌕
+          </div>
+          <div>
+            <h3 className="font-bold text-[#193342]">Find a patient</h3>
+            <p className="mt-1 text-xs text-[#8797a1]">
+              Enter at least two characters to search the patient directory.
+            </p>
+          </div>
+        </div>
+
+        <div className="relative">
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search by patient name or MRN..."
+            aria-label="Search patient for ICU risk assessment"
+            className="w-full rounded-xl border border-[#dfe7ec] bg-[#f9fbfc] px-4 py-3.5 pr-12 text-sm text-[#193342] outline-none transition focus:border-[#087f8c] focus:ring-4 focus:ring-[#087f8c]/10"
+          />
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-lg text-[#82939d]">
+            {isSearching ? "…" : "⌕"}
+          </span>
+        </div>
+
+        {searchError && (
+          <p role="alert" className="mt-3 text-sm text-[#b8474c]">
+            {searchError}
+          </p>
+        )}
+
+        {query.trim().length === 1 && (
+          <p className="mt-3 text-xs text-[#8797a1]">
+            Type one more character to search.
+          </p>
+        )}
+
+        {results.length > 0 && (
+          <div className="mt-3 overflow-hidden rounded-xl border border-[#e3eaf0]">
+            {results.map((patient) => (
+              <button
+                key={patient.id}
+                onClick={() => void selectPatient(patient)}
+                className="flex w-full items-center gap-3 border-b border-[#edf1f3] px-4 py-3 text-left last:border-0 hover:bg-[#f5fafa]"
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e3f5f5] text-xs font-bold text-[#087f8c]">
+                  {`${patient.first_name?.[0] ?? ""}${patient.last_name?.[0] ?? ""}`.toUpperCase()}
                 </span>
-              )}
-            </div>
-
-            {isLoadingRisk && <p className="text-sm text-ink-muted">Calculating risk…</p>}
-            {riskError && (
-              <div className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">{riskError}</div>
-            )}
-
-            {risk && style && (
-              <div className={`rounded-lg border border-border border-l-4 ${style.border} p-4`}>
-                <div className="flex items-baseline justify-between">
-                  <span
-                    className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${style.badgeBg} ${style.badgeText}`}
-                  >
-                    {style.label}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-[#294452]">
+                    {patient.first_name} {patient.last_name}
                   </span>
-                  <span className="tabular-figures text-2xl font-semibold text-ink">
-                    {(risk.probability * 100).toFixed(1)}%
+                  <span className="mt-1 block text-xs text-[#8797a1]">
+                    MRN: {patient.mrn}
                   </span>
-                </div>
-
-                <div className="mt-3 text-xs font-medium uppercase tracking-wide text-ink-muted">
-                  Top contributing factors
-                </div>
-                <ul className="mt-1 space-y-1">
-                  {risk.top_factors.map((factor) => (
-                    <li key={factor} className="text-sm text-ink">
-                      {FACTOR_LABELS[factor] ?? factor}
-                    </li>
-                  ))}
-                </ul>
-
-                <p className="mt-4 border-t border-border pt-3 text-xs text-ink-muted">{risk.model_note}</p>
-              </div>
-            )}
+                </span>
+                <span className="text-sm text-[#087f8c]">View assessment →</span>
+              </button>
+            ))}
           </div>
         )}
 
-        {!selectedPatient && (
-          <p className="text-center text-sm text-ink-muted">
-            Search for a patient above to see their ICU admission risk.
-          </p>
-        )}
-      </div>
+        {!isSearching &&
+          query.trim().length >= 2 &&
+          !searchError &&
+          results.length === 0 && (
+            <p className="mt-4 rounded-xl bg-[#f7f9fa] p-4 text-sm text-[#738391]">
+              No matching patients found. Check the name or MRN and try again.
+            </p>
+          )}
+      </section>
+
+      {selectedPatient && (
+        <section className="overflow-hidden rounded-2xl border border-[#e3eaf0] bg-white shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#e8eef2] p-5 sm:p-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#e3f5f5] font-bold text-[#087f8c]">
+                {`${selectedPatient.first_name?.[0] ?? ""}${selectedPatient.last_name?.[0] ?? ""}`.toUpperCase()}
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-[#8797a1]">
+                  Selected patient
+                </p>
+                <h3 className="mt-1 font-bold text-[#193342]">
+                  {selectedPatient.first_name} {selectedPatient.last_name}
+                </h3>
+                <p className="mt-1 text-xs text-[#738391]">
+                  MRN: {selectedPatient.mrn}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setSelectedPatient(null);
+                setRisk(null);
+                setRiskError(null);
+              }}
+              className="rounded-lg border border-[#dfe7ec] px-3 py-2 text-xs font-semibold text-[#526b78] hover:bg-[#f7f9fa]"
+            >
+              Clear selection
+            </button>
+          </div>
+
+          <div className="p-5 sm:p-6">
+            {isLoadingRisk && (
+              <div className="space-y-4 py-5">
+                <div className="h-5 w-44 animate-pulse rounded bg-[#edf2f4]" />
+                <div className="h-24 animate-pulse rounded-2xl bg-[#f3f7f8]" />
+                <div className="h-16 animate-pulse rounded-xl bg-[#edf2f4]" />
+                <p className="text-sm text-[#738391]">
+                  Retrieving assessment from the configured model…
+                </p>
+              </div>
+            )}
+
+            {riskError && !isLoadingRisk && (
+              <div className="rounded-xl border border-[#f0cdcf] bg-[#fff5f5] p-4">
+                <p role="alert" className="text-sm font-semibold text-[#b8474c]">
+                  {riskError}
+                </p>
+                <button
+                  onClick={() => void selectPatient(selectedPatient)}
+                  className="mt-3 rounded-lg border border-[#e7babc] px-3 py-2 text-xs font-semibold text-[#a83e44] hover:bg-white"
+                >
+                  Retry assessment
+                </button>
+              </div>
+            )}
+
+            {risk && !isLoadingRisk && (
+              <>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="rounded-2xl border border-[#e3eaf0] bg-[#f9fbfc] p-5">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-[#8797a1]">
+                      Model risk category
+                    </p>
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      {style ? (
+                        <span
+                          className="rounded-full border px-3 py-2 text-sm font-bold"
+                          style={{
+                            color: style.color,
+                            backgroundColor: style.background,
+                            borderColor: style.border,
+                          }}
+                        >
+                          {style.label}
+                        </span>
+                      ) : (
+                        <span className="rounded-full border border-[#e3eaf0] bg-white px-3 py-2 text-sm font-bold text-[#526b78]">
+                          {rawLevel ?? "Not provided"}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-4 text-xs leading-5 text-[#8797a1]">
+                      Category returned by the backend model; it is not a
+                      clinical diagnosis.
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-[#e3eaf0] bg-[#f9fbfc] p-5">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-[#8797a1]">
+                      Model probability
+                    </p>
+                    <p className="mt-3 text-3xl font-bold tracking-tight text-[#193342]">
+                      {probability === null ? "—" : `${probability.toFixed(1)}%`}
+                    </p>
+                    {probability !== null && (
+                      <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#e6edf0]">
+                        <div
+                          className="h-full rounded-full bg-[#087f8c] transition-all"
+                          style={{ width: `${probability}%` }}
+                        />
+                      </div>
+                    )}
+                    <p className="mt-3 text-xs leading-5 text-[#8797a1]">
+                      Reported model probability, not a guarantee of an
+                      individual patient's outcome.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-5 rounded-2xl border border-[#e3eaf0] p-5">
+                  <div className="mb-4">
+                    <h4 className="font-bold text-[#193342]">
+                      Contributing factors
+                    </h4>
+                    <p className="mt-1 text-xs leading-5 text-[#8797a1]">
+                      Factors supplied by the model response. Their display
+                      does not imply causation.
+                    </p>
+                  </div>
+
+                  {risk.top_factors?.length ? (
+                    <div className="flex flex-wrap gap-2">
+                      {risk.top_factors.map((factor, index) => (
+                        <span
+                          key={`${displayFactor(factor)}-${index}`}
+                          className="rounded-lg border border-[#e3eaf0] bg-[#f7f9fa] px-3 py-2 text-xs font-medium capitalize text-[#526b78]"
+                        >
+                          {displayFactor(factor)}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="rounded-xl bg-[#f7f9fa] p-4 text-sm text-[#738391]">
+                      No contributing factors were supplied by the model.
+                    </p>
+                  )}
+
+                  {risk.model_note && (
+                    <div className="mt-4 rounded-xl bg-[#edf6f6] p-4">
+                      <p className="text-xs font-bold text-[#087f8c]">
+                        Model note
+                      </p>
+                      <p className="mt-1 text-sm leading-6 text-[#526b78]">
+                        {risk.model_note}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+      )}
     </AppLayout>
   );
 }

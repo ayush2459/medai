@@ -2,10 +2,11 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { useAuth } from "./lib/auth";
 import { ExecutiveDashboard } from "./pages/ExecutiveDashboard";
-import { GlucoTwinPage } from "./pages/GlucoTwinPage";
 import { IcuRiskPage } from "./pages/IcuRiskPage";
 import { LoginPage } from "./pages/LoginPage";
 import { PatientsPage } from "./pages/PatientsPage";
+import { DiseaseAnalyticsPage } from "./pages/DiseaseAnalyticsPage";
+import { GlucoTwinPage } from "./pages/GlucoTwinPage";
 
 function RootRedirect() {
   const { user, isLoading } = useAuth();
@@ -35,14 +36,6 @@ function App() {
         }
       />
       <Route
-        path="/patients"
-        element={
-          <ProtectedRoute>
-            <PatientsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/glucotwin"
         element={
           <ProtectedRoute>
@@ -50,6 +43,23 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/analytics"
+        element={
+          <ProtectedRoute>
+            <DiseaseAnalyticsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patients"
+        element={
+          <ProtectedRoute>
+            <PatientsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="*" element={<RootRedirect />} />
     </Routes>
   );
 }
