@@ -28,6 +28,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
             full_name="Demo Admin",
             role=UserRole.ADMIN,
             is_active=True,
+            is_mfa_enabled=False,
         )
         return demo_user
 
@@ -51,6 +52,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
             full_name="Demo Admin",
             role=UserRole.ADMIN,
             is_active=True,
+            is_mfa_enabled=False,
         )
         return demo_user
 

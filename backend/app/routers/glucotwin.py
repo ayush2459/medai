@@ -398,9 +398,10 @@ def get_twin(
             if feature_dict is not None:
                 pred_dict = predict_row(feature_dict)
                 pred_dict["top_factors_hyper"] = explain_row(feature_dict, "hyper")
-                pred_dict["top_factors_hypo"]  = explain_row(feature_dict, "hypo")
+                pred_dict["top_factors_hypo"] = explain_row(feature_dict, "hypo")
     except Exception:
-        pass
+        import logging
+        logging.exception("GlucoTwin prediction failed for patient %s", patient_id)
 
     # Investigation suggestions
     active_high_risk = False
@@ -530,40 +531,58 @@ def get_audit(
 @router.post("/demo/advance/{patient_id}")
 def demo_advance(
     patient_id: str,
-    n_minutes: int = Query(60, ge=5, le=480, description="Minutes of simulated data to replay"),
+    n_minutes: int = Query(30, ge=5, le=480, description="Minutes of simulated data to replay"),
     _current_user: User = Depends(get_current_user),
 ):
-    """
-    Replay the next n_minutes of pre-generated wearable data for a patient,
-    emulating live streaming for demo purposes.
-    """
-    (get_twin_state, save_audit_entry, save_prediction, get_audit_log, init_db,
-     predict_row, ModelNotTrainedError, explain_row, evaluate_rules) = _import_twin()
-    init_db(TWIN_DB)
+    """Advance the clearly synthetic demo stream using pre-generated readings."""
+    _import_twin()
     _get_patient_or_404(patient_id)
 
     wdf = _load_wearable(patient_id)
     if wdf is None or wdf.empty:
-        raise HTTPException(status_code=404, detail="No pre-generated wearable data found for demo replay")
+        raise HTTPException(
+            status_code=404,
+            detail="No pre-generated synthetic wearable data found for demo replay",
+        )
 
-    wdf_sorted = wdf.sort_values("timestamp").reset_index(drop=True)
-    cursor = _DEMO_CURSOR.get(patient_id, len(wdf_sorted) - (21 * 288))  # start from 21 days ago
-    cursor = max(0, cursor)
+    wdf_sorted = wdf.sort_values("timestamp").reset_index(drop=True).copy()
+    n_steps = max(1, n_minutes // 5)
+    total = len(wdf_sorted)
 
-    n_steps = n_minutes // 5
-    end_cursor = min(cursor + n_steps, len(wdf_sorted))
+    # Start near the end so the first click displays recent synthetic readings.
+    cursor = _DEMO_CURSOR.get(patient_id, max(0, total - n_steps))
+    if cursor >= total:
+        cursor = 0
+
+    end_cursor = min(cursor + n_steps, total)
     batch = wdf_sorted.iloc[cursor:end_cursor].copy()
-    _DEMO_CURSOR[patient_id] = end_cursor
 
-    # Update twin state with the new batch
+    # Loop back to the beginning when the prerecorded synthetic sequence ends.
+    _DEMO_CURSOR[patient_id] = 0 if end_cursor >= total else end_cursor
+
+    if batch.empty:
+        raise HTTPException(status_code=503, detail="Synthetic demo replay produced no readings")
+
+    # Rebase replayed timestamps to the current timeline, preserving 5-minute spacing.
+    import pandas as pd
+    from datetime import datetime, timezone
+
+    ts = pd.to_datetime(batch["timestamp"], utc=True, errors="coerce")
+    valid = ts.dropna()
+    if not valid.empty:
+        latest_original = valid.max()
+        now = pd.Timestamp(datetime.now(timezone.utc))
+        batch["timestamp"] = ts + (now - latest_original)
+
     from twin.state import update_twin_state
-    state = update_twin_state(patient_id, batch, db_path=TWIN_DB)
+    update_twin_state(patient_id, batch, db_path=TWIN_DB)
 
-    replayed = len(batch)
+    glucose = pd.to_numeric(batch["glucose_mg_dl"], errors="coerce").dropna()
     return {
         "patient_id": patient_id,
-        "replayed_readings": replayed,
+        "replayed_readings": len(batch),
         "cursor": end_cursor,
-        "is_end": end_cursor >= len(wdf_sorted),
-        "latest_glucose": float(batch["glucose_mg_dl"].dropna().iloc[-1]) if batch["glucose_mg_dl"].dropna().any() else None,
+        "is_end": end_cursor >= total,
+        "data_source": "synthetic_demo",
+        "latest_glucose": float(glucose.iloc[-1]) if not glucose.empty else None,
     }

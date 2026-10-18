@@ -189,7 +189,7 @@ def _stratified_metrics(
 
 
 def _plot_roc_pr(y: np.ndarray, proba: np.ndarray, target: str) -> None:
-    if not _PLT:
+    if not _PLT or len(y) == 0 or len(np.unique(y)) < 2:
         return
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
 
@@ -212,7 +212,7 @@ def _plot_roc_pr(y: np.ndarray, proba: np.ndarray, target: str) -> None:
 
 
 def _plot_calibration(y: np.ndarray, proba: np.ndarray, target: str) -> None:
-    if not _PLT:
+    if not _PLT or len(y) == 0 or len(np.unique(y)) < 2:
         return
     fraction_pos, mean_pred = calibration_curve(y, proba, n_bins=10)
     fig, ax = plt.subplots(figsize=(5, 4))
@@ -227,12 +227,21 @@ def _plot_calibration(y: np.ndarray, proba: np.ndarray, target: str) -> None:
 
 
 def _plot_shap_summary(bundle: dict, X: pd.DataFrame, target: str) -> None:
-    if not _SHAP or not _PLT:
+    if not _SHAP or not _PLT or X.empty:
         return
     base_clf = bundle["base_clf"]
-    explainer = shap.TreeExplainer(base_clf, check_additivity=False)
-    sample = X.sample(min(500, len(X)), random_state=SEED)
-    shap_values = explainer.shap_values(sample, check_additivity=False)
+    # `check_additivity` is not accepted by TreeExplainer in some SHAP versions.
+    # SHAP is an optional diagnostic plot; if it fails, continue evaluating metrics.
+    try:
+        sample = X.sample(min(500, len(X)), random_state=SEED)
+        explainer = shap.TreeExplainer(base_clf)
+        try:
+            shap_values = explainer.shap_values(sample, check_additivity=False)
+        except TypeError:
+            shap_values = explainer.shap_values(sample)
+    except Exception as exc:
+        print(f"[evaluate] SHAP plot skipped for {target}: {exc}")
+        return
     if isinstance(shap_values, list):
         sv = shap_values[1]
     else:

@@ -22,7 +22,7 @@ import pandas as pd
 
 from twin.features import ALL_FEATURES, validate_and_impute
 
-MODELS_DIR = Path("twin/models")
+MODELS_DIR = Path(__file__).resolve().parent / "models"
 MODEL_VERSION = "lightgbm_v1"
 
 RISK_BANDS = {

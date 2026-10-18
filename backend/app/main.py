@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.core.config import settings
-from app.routers import analytics, auth, glucotwin, ml, oauth, patients
+from app.routers import analytics, auth, glucotwin, ml, oauth, patients, nightscout
 
 app = FastAPI(
     title="MedIntel AI",
@@ -28,6 +28,7 @@ app.include_router(patients.router)
 app.include_router(analytics.router)
 app.include_router(ml.router)
 app.include_router(glucotwin.router)
+app.include_router(nightscout.router)
 
 
 @app.get("/api/health", tags=["health"])

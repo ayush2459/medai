@@ -1,30 +1,77 @@
 {
-  "_note": "Run 'make eval' to populate this file with real metrics from the trained models. All values below are placeholders until training and evaluation are run.",
   "model_version": "lightgbm_v1",
   "hyper": {
-    "auroc": null,
-    "auprc": null,
-    "brier_score": null,
-    "sens_at_90spec": null,
-    "mean_lead_time_min": null,
-    "positive_rate": null,
-    "n_samples": null
+    "auroc": 0.9212646445193386,
+    "auprc": 0.9576132000587594,
+    "brier_score": 0.09824414997327344,
+    "sens_at_90spec": 0.8532338308457711,
+    "mean_lead_time_min": 1851.9113924050632,
+    "positive_rate": 0.7217235188509874,
+    "n_samples": 557,
+    "stratified": {
+      "med_insulin_or_su": {
+        "auroc": 0.9052444092618246,
+        "n": 481
+      },
+      "age_lt50": {
+        "auroc": 0.9728622631848438,
+        "n": 157
+      },
+      "age_50_65": {
+        "auroc": 0.8919932574799831,
+        "n": 331
+      },
+      "age_gt65": {
+        "auroc": 0.8957894736842106,
+        "n": 69
+      },
+      "hba1c_7.5_9": {
+        "auroc": 0.9212646445193386,
+        "n": 557
+      }
+    }
   },
   "hypo": {
-    "auroc": null,
-    "auprc": null,
-    "brier_score": null,
-    "sens_at_90spec": null,
-    "mean_lead_time_min": null,
-    "positive_rate": null,
-    "n_samples": null
+    "auroc": 0.5064009549977875,
+    "auprc": 0.03517212812819545,
+    "brier_score": 0.03527669856402671,
+    "sens_at_90spec": 1.0,
+    "mean_lead_time_min": 1283.5714285714287,
+    "positive_rate": 0.03458382180539273,
+    "n_samples": 1706,
+    "stratified": {
+      "med_insulin_or_su": {
+        "auroc": 0.5029967363478641,
+        "n": 1456
+      },
+      "age_lt50": {
+        "auroc": 0.5,
+        "n": 491
+      },
+      "age_50_65": {
+        "auroc": 0.5053551225644248,
+        "n": 968
+      },
+      "hba1c_7.5_9": {
+        "auroc": 0.5064009549977875,
+        "n": 1706
+      }
+    }
   },
   "hyper_baselines": {
-    "persistence": { "auroc": null },
-    "linear_extrapolation": { "auroc": null }
+    "persistence": {
+      "auroc": 0.5
+    },
+    "linear_extrapolation": {
+      "auroc": 0.4644118119082009
+    }
   },
   "hypo_baselines": {
-    "persistence": { "auroc": null },
-    "linear_extrapolation": { "auroc": null }
+    "persistence": {
+      "auroc": 0.5
+    },
+    "linear_extrapolation": {
+      "auroc": 0.508170994000391
+    }
   }
 }

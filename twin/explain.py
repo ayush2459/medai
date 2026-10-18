@@ -38,7 +38,7 @@ def _get_explainer(target: str) -> Any:
     bundle = _load_model(target)
     # Unwrap CalibratedClassifierCV → get the base estimator
     base_clf = bundle["base_clf"]
-    explainer = shap.TreeExplainer(base_clf, check_additivity=False)
+    explainer = shap.TreeExplainer(base_clf)
     return explainer, bundle
 
 

@@ -22,8 +22,8 @@ from typing import Any
 
 import yaml
 
-RULES_PATH    = Path("rules/rules_v1.yaml")
-EVIDENCE_PATH = Path("rules/evidence_register.csv")
+RULES_PATH = Path(__file__).resolve().parent / "rules_v1.yaml"
+EVIDENCE_PATH = Path(__file__).resolve().parent / "evidence_register.csv"
 
 # Status codes
 STATUS_DUE     = "DUE"

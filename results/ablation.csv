@@ -1,9 +1,9 @@
 target,model,auroc_test,auprc_test
-hyper,ehr_only,,
-hyper,cgm_only,,
-hyper,cgm_wearable,,
-hyper,full_fusion,,
-hypo,ehr_only,,
-hypo,cgm_only,,
-hypo,cgm_wearable,,
-hypo,full_fusion,,
+hyper,ehr_only,0.5537152944952657,0.7917227726694744
+hyper,cgm_only,0.933124699085219,0.9631054990672856
+hyper,cgm_wearable,0.9454020221473278,0.9761933597206582
+hyper,full_fusion,0.9458513882201894,0.9770056435043545
+hypo,ehr_only,0.5285778971525013,0.039754386973301054
+hypo,cgm_only,0.4546221687094152,0.02970756675986869
+hypo,cgm_wearable,0.5969559445524991,0.04394055593919588
+hypo,full_fusion,0.670638963498091,0.050340468713080004
