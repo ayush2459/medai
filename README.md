@@ -26,6 +26,7 @@
 - [Data Sources and Limitations](#data-sources-and-limitations)
 - [Model and Results](#model-and-results)
 - [Investigation Rules](#investigation-rules)
+- [Patient-Specific Clinical Guidance](#patient-specific-clinical-guidance)
 - [How to Run](#how-to-run)
 - [Tech Stack](#tech-stack)
 - [License and Dataset Licences](#license-and-dataset-licences)
@@ -194,6 +195,41 @@ Rule intervals are documented placeholder defaults. Verify against ADA Standards
 
 ---
 
+## Patient-Specific Clinical Guidance
+
+The integrated MedAI platform includes a **Tests & Care Guidance** workflow
+that prepares clinician-review suggestions using the selected patient's
+available chart information.
+
+### Information considered
+
+- Documented diagnoses and their recorded details.
+- Available laboratory results, units, reference ranges, and abnormal flags.
+- Current prescriptions and available clinician notes.
+- GlucoTwin short-term glucose-risk predictions, when available.
+
+### How it works
+
+- The backend prepares a rule-based draft from the available patient context.
+- AI-assisted guidance can use local Ollama inference, such as `llama3.2`,
+  or a configured hosted provider such as Groq.
+- If AI inference is unavailable, the backend may fall back to rule-based guidance.
+- The interface presents suggestions and precautions for clinician review.
+
+### Important limitations
+
+- Suggestions are not diagnoses, prescriptions, or automatic test orders.
+- A clinician must verify the patient's record and decide what investigations
+  or care are appropriate.
+- Incorrect, synthetic, stale, or mismatched records can produce misleading
+  suggestions. Verify units, reference ranges, dates, and critical results.
+- Do not change treatment or delay emergency care based on AI output.
+
+This is a prototype feature, not a clinically validated medical device.
+It must not be used independently to make real patient-care decisions.
+
+---
+
 ## How to Run
 
 ### Prerequisites
@@ -225,6 +261,8 @@ cd frontend && npm install && npm run dev   # http://localhost:5173
 Email:    admin@medintel.ai
 Password: changeme123
 ```
+
+**Security:** These are demo credentials only. Change or disable them before exposing a deployment publicly. Never commit `.env` files, API keys, database passwords, or production credentials.
 
 Navigate to **Digital Twin** in the sidebar (Type 2 Diabetes module).
 
@@ -259,6 +297,7 @@ python -c "import secrets; print(secrets.token_urlsafe(64))"
 | Backend | FastAPI, Pydantic, Uvicorn | Typed, async, excellent DX |
 | Storage | PostgreSQL (existing) + SQLite (twin state) + Parquet (datasets) | Zero-setup demo, easy to scale |
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS v4, Recharts | Existing framework, extended not replaced |
+| AI guidance | Ollama / optional hosted LLM provider and rule-based fallback | Clinician-facing draft guidance requiring review |
 | Testing | pytest | Unit tests for every module |
 | Packaging | Docker Compose, Makefile | One-command reproducible run |
 | Interoperability | HL7 FHIR R4 mapping (design) | Path to real EHR integration |
