@@ -349,6 +349,54 @@ def get_cgm(
     return {"patient_id": patient_id, "readings": readings}
 
 
+
+
+def _attach_lab_dates(state, patient_id):
+    """Enrich twin state with dates from available lab-result records."""
+    from pathlib import Path
+    import pandas as pd
+
+    lab_path = REPO_ROOT / "data" / "lab_results.parquet"
+    if not lab_path.exists():
+        return state
+
+    try:
+        labs = pd.read_parquet(lab_path)
+        required = {"patient_id", "test_code", "performed_date"}
+        if not required.issubset(labs.columns):
+            return state
+
+        labs = labs[labs["patient_id"].astype(str) == str(patient_id)].copy()
+        labs["performed_date"] = pd.to_datetime(
+            labs["performed_date"], errors="coerce"
+        )
+        labs = labs.dropna(subset=["performed_date"])
+        labs["test_code"] = labs["test_code"].astype(str).str.strip().str.lower()
+
+        def latest(codes):
+            rows = labs[labs["test_code"].isin(codes)]
+            if rows.empty:
+                return None
+            return rows["performed_date"].max().date().isoformat()
+
+        mappings = {
+            "last_hba1c_date": {"hba1c", "hb a1c"},
+            "last_egfr_date": {"egfr"},
+            "last_lipid_date": {"hdl", "ldl", "tg", "triglycerides"},
+        }
+
+        for field, codes in mappings.items():
+            recorded_date = latest(codes)
+            if recorded_date:
+                state[field] = recorded_date
+
+        return state
+    except Exception:
+        import logging
+        logging.exception("Could not enrich lab dates for %s", patient_id)
+        return state
+
+
 @router.get("/twin/{patient_id}", response_model=TwinStateOut)
 def get_twin(
     patient_id: str,
@@ -410,6 +458,7 @@ def get_twin(
             pred_dict.get("risk_band_hyper") == "high"
             or pred_dict.get("risk_band_hypo") == "high"
         )
+    state = _attach_lab_dates(state, patient_id)
     investigations = evaluate_rules(state, active_high_risk=active_high_risk)
 
     out = {
@@ -488,6 +537,7 @@ def get_investigations(
     init_db(TWIN_DB)
     _get_patient_or_404(patient_id)
     state = get_twin_state(patient_id, TWIN_DB) or {}
+    state = _attach_lab_dates(state, patient_id)
     suggestions = evaluate_rules(state, active_high_risk=False)
     return {"patient_id": patient_id, "suggestions": suggestions}
 

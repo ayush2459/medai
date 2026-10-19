@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AppLayout } from "../components/AppLayout";
 import { AddPatientModal } from "../components/AddPatientModal";
+import { ClinicalGuidanceModal } from "../components/ClinicalGuidanceModal";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import type { PaginatedPatients, PatientSummary } from "../lib/types";
@@ -52,6 +53,7 @@ export function PatientsPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [guidancePatient, setGuidancePatient] = useState<PatientSummary | null>(null);
 
   async function loadPatients() {
     setIsLoading(true);
@@ -215,6 +217,7 @@ export function PatientsPage() {
                 <th className="px-4 py-4">Gender</th>
                 <th className="px-4 py-4">Admission</th>
                 <th className="px-5 py-4">Status</th>
+                  <th className="px-5 py-4">Clinical guidance</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#edf1f3]">
@@ -274,12 +277,18 @@ export function PatientsPage() {
                       {patient.is_admitted ? "Admitted" : "Not admitted"}
                     </span>
                   </td>
+                  <td className="px-5 py-4">
+                    <button type="button" onClick={() => setGuidancePatient(patient)}
+                      className="whitespace-nowrap rounded-lg border border-[#b9e3df] bg-[#effaf8] px-3 py-2 text-xs font-semibold text-[#087f8c] hover:bg-[#dff5f1]">
+                      Tests &amp; Care Guidance
+                    </button>
+                  </td>
                 </tr>
               ))}
 
               {!isLoading && !error && (!data?.items || data.items.length === 0) && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-16 text-center">
+                  <td colSpan={7} className="px-5 py-16 text-center">
                     <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#edf6f6] text-2xl text-[#087f8c]">
                       ⌕
                     </div>
@@ -328,6 +337,13 @@ export function PatientsPage() {
         <AddPatientModal
           onClose={() => setShowAddModal(false)}
           onCreated={handlePatientCreated}
+        />
+      )}
+      {guidancePatient && (
+        <ClinicalGuidanceModal
+          patientId={guidancePatient.id}
+          patientName={`${guidancePatient.first_name} ${guidancePatient.last_name}`}
+          onClose={() => setGuidancePatient(null)}
         />
       )}
     </AppLayout>

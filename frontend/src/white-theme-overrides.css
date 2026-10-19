@@ -1,0 +1,102 @@
+/* MedIntel AI — light/white theme restoration.
+   Imported after index.css so it takes precedence over the previous dark theme. */
+:root {
+  color-scheme: light;
+  --color-bg: #f7f9fc;
+  --color-surface: #ffffff;
+  --color-border: #e2e8f0;
+  --color-ink: #172b3a;
+  --color-ink-muted: #64748b;
+  --color-primary: #0d7f88;
+  --color-primary-dark: #09666e;
+  --color-primary-soft: #e7f5f5;
+  --color-accent: #b7791f;
+  --color-accent-soft: #fff7e6;
+  --color-danger: #c2414b;
+  --color-danger-soft: #fff1f2;
+  --color-success: #15803d;
+}
+html, body, #root { min-height: 100%; background: #f7f9fc !important; color: #172b3a; }
+body { min-width: 320px; }
+.app-shell, .main-column, .min-h-screen { background: #f7f9fc !important; color: #172b3a !important; }
+.sidebar { background: #ffffff !important; color: #334155 !important; border-right: 1px solid #e2e8f0 !important; box-shadow: 4px 0 18px rgba(15, 23, 42, .025); }
+.brand-lockup strong, .topbar-left strong, h1, .page-heading h1 { color: #172b3a !important; }
+.brand-lockup small, .nav-section, .sidebar-foot small, .eyebrow, .breadcrumb-muted { color: #64748b !important; }
+.workspace-chip, .help-card { background: #f8fafc !important; border-color: #e2e8f0 !important; color: #334155 !important; }
+.help-card strong, .sidebar-foot strong { color: #334155 !important; }
+.help-card p { color: #64748b !important; }
+.help-card button { color: #0d7f88 !important; }
+.sidebar-foot { border-top-color: #e2e8f0 !important; }
+.nav-item { color: #475569 !important; }
+.nav-item:hover { background: #f1f5f9 !important; color: #0f172a !important; }
+.nav-item.active { background: #e7f5f5 !important; color: #09666e !important; box-shadow: none !important; }
+.nav-live { color: #0f766e !important; background: #ccfbf1 !important; }
+.topbar { background: #ffffff !important; border-bottom-color: #e2e8f0 !important; }
+.topbar-left, .topbar-left strong { color: #334155 !important; }
+.system-status { color: #64748b !important; }
+.user-meta strong { color: #334155 !important; }
+.user-meta small { color: #64748b !important; }
+.today-pill { background: #ffffff !important; border-color: #e2e8f0 !important; color: #475569 !important; }
+.app-footer { border-top-color: #e2e8f0 !important; color: #64748b !important; }
+
+/* Convert the dark Tailwind utility surfaces used by the reports and twin pages. */
+.min-h-screen [class*="bg-[#07140f"],
+.min-h-screen [class*="bg-[#0b1827"],
+.min-h-screen [class*="bg-[#111b2b"],
+.min-h-screen [class*="bg-[#10231a"],
+.min-h-screen [class*="bg-[#0d1e15"],
+.min-h-screen [class*="bg-slate-950"],
+.min-h-screen [class*="bg-slate-900"],
+.min-h-screen [class*="bg-gray-950"],
+.min-h-screen [class*="bg-gray-900"] { background-color: #ffffff !important; }
+.min-h-screen [class*="border-white/"],
+.min-h-screen [class*="border-slate-800"],
+.min-h-screen [class*="border-slate-700"] { border-color: #e2e8f0 !important; }
+.min-h-screen [class*="text-white"],
+.min-h-screen [class*="text-slate-100"],
+.min-h-screen [class*="text-slate-200"],
+.min-h-screen [class*="text-gray-100"],
+.min-h-screen [class*="text-gray-200"] { color: #172b3a !important; }
+.min-h-screen [class*="text-slate-300"],
+.min-h-screen [class*="text-slate-400"],
+.min-h-screen [class*="text-gray-300"],
+.min-h-screen [class*="text-gray-400"] { color: #64748b !important; }
+.min-h-screen [class*="shadow-[0_18px_55px"] { box-shadow: 0 5px 22px rgba(15, 23, 42, .06) !important; }
+.min-h-screen .bg-surface { background: #ffffff !important; border-color: #e2e8f0 !important; color: #172b3a !important; }
+.min-h-screen .text-ink { color: #172b3a !important; }
+.min-h-screen .text-ink-muted { color: #64748b !important; }
+.min-h-screen .border-border { border-color: #e2e8f0 !important; }
+.min-h-screen .rounded-xl, .min-h-screen .rounded-2xl { border-radius: 14px; }
+.min-h-screen table { color: #334155; }
+.min-h-screen table thead tr { background: #f1f5f9 !important; color: #334155 !important; }
+.min-h-screen table tbody tr:hover { background: #f8fafc !important; }
+.min-h-screen input, .min-h-screen select, .min-h-screen textarea { background: #ffffff !important; color: #172b3a !important; border-color: #cbd5e1 !important; }
+.min-h-screen input::placeholder, .min-h-screen textarea::placeholder { color: #94a3b8 !important; }
+.min-h-screen button { color: inherit; }
+.min-h-screen button[class*="bg-[#"], .min-h-screen a[class*="bg-[#"] { background-color: #0d7f88 !important; color: #ffffff !important; }
+.min-h-screen [role="dialog"], .min-h-screen [role="menu"] { background: #ffffff !important; color: #172b3a !important; border-color: #e2e8f0 !important; }
+.min-h-screen .recharts-cartesian-axis-tick-value { fill: #64748b !important; }
+.min-h-screen .recharts-cartesian-grid line { stroke: #e2e8f0 !important; }
+
+/* The executive banner used to be a dark gradient; keep it clean and white too. */
+.min-h-screen section[style*="linear-gradient"],
+.min-h-screen div[style*="linear-gradient"] { background: #ffffff !important; color: #172b3a !important; border: 1px solid #e2e8f0; box-shadow: 0 5px 22px rgba(15, 23, 42, .045); }
+.min-h-screen section[style*="linear-gradient"] h2,
+.min-h-screen div[style*="linear-gradient"] h2,
+.min-h-screen section[style*="linear-gradient"] p,
+.min-h-screen div[style*="linear-gradient"] p,
+.min-h-screen section[style*="linear-gradient"] span,
+.min-h-screen div[style*="linear-gradient"] span { color: #334155 !important; }
+
+/* Keep the login screen's intentionally illustrated panel intact. */
+@media (max-width: 900px) {
+  .sidebar { width: 72px; flex-basis: 72px; padding-left: 8px; padding-right: 8px; }
+  .min-h-screen { padding: 22px 16px !important; }
+  .topbar { padding-left: 16px !important; padding-right: 16px !important; }
+}
+@media (max-width: 560px) {
+  .min-h-screen { padding: 18px 12px !important; }
+  .page-heading { align-items: flex-start; flex-wrap: wrap; }
+  .page-heading h1 { font-size: 23px !important; }
+  .app-footer { flex-wrap: wrap; }
+}

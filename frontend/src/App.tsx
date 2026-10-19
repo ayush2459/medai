@@ -6,8 +6,8 @@ import { IcuRiskPage } from "./pages/IcuRiskPage";
 import { LoginPage } from "./pages/LoginPage";
 import { PatientsPage } from "./pages/PatientsPage";
 import { DiseaseAnalyticsPage } from "./pages/DiseaseAnalyticsPage";
-import { GlucoTwinPage } from "./pages/GlucoTwinPage";
 import { ReportsPage } from "./pages/ReportsPage";
+import { GlucoTwinPage } from "./pages/GlucoTwinPage";
 
 function RootRedirect() {
   const { user, isLoading } = useAuth();
@@ -53,18 +53,18 @@ function App() {
         }
       />
       <Route
-        path="/patients"
-        element={
-          <ProtectedRoute>
-            <PatientsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/reports"
         element={
           <ProtectedRoute>
             <ReportsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patients"
+        element={
+          <ProtectedRoute>
+            <PatientsPage />
           </ProtectedRoute>
         }
       />

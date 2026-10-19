@@ -13,9 +13,9 @@ const NAV = [
   { to: "/dashboard", label: "Overview", section: "WORKSPACE", icon: "grid" },
   { to: "/patients", label: "Patients", icon: "users" },
   { to: "/icu-risk", label: "ICU Risk Monitor", icon: "activity" },
-  { to: "/glucotwin", label: "GlucoTwin", section: "DIGITAL TWIN", icon: "activity" },
+  { to: "/glucotwin", label: "CGM / GlucoTwin", section: "DIGITAL TWIN", icon: "activity" },
   { to: "/analytics", label: "Disease Analytics", section: "INTELLIGENCE", icon: "chart" },
-  { to: "/reports", label: "Reports", section: "OPERATIONS", icon: "chart" },
+  { to: "/reports", label: "Reports", section: "INTELLIGENCE", icon: "report" },
 ];
 
 function NavIcon({ name }: { name: string }) {
@@ -47,6 +47,13 @@ function NavIcon({ name }: { name: string }) {
           <path d="M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20" />
           <circle cx="9.5" cy="7.5" r="3.5" />
           <path d="M17 4.5a3.5 3.5 0 0 1 0 6.8M21 20v-1.5a4 4 0 0 0-3-3.87" />
+        </svg>
+      );
+    case "report":
+      return (
+        <svg {...common}>
+          <path d="M6 3.5h8l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 20z" />
+          <path d="M14 3.5V8h4M9 12h6M9 16h6" />
         </svg>
       );
     case "activity":

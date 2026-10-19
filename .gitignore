@@ -38,3 +38,23 @@ results/figures/*.pdf
 
 # Jupyter notebooks checkpoints
 .ipynb_checkpoints/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+backend.env
+backend/.env
+
+# Local backups and database dumps
+backups/
+*.dump
+*.bak
+*.backup*
+*.before_*
+*.before-*
+*.parquet.before_*
+
+# Generated test output
+frontend/test-results/
+playwright-report/

@@ -384,116 +384,196 @@ function InvestigationsTable({
   patientId: string;
   onDecision: () => void;
 }) {
-  const [pending] = useState<Record<number, string>>({});
+  const [pending, setPending] = useState<Record<number, string>>({});
   const [reasons, setReasons] = useState<Record<number, string>>({});
+  const [errors, setErrors] = useState<Record<number, string>>({});
+  const [success, setSuccess] = useState<Record<number, string>>({});
 
   async function submitDecision(
     idx: number,
     s: InvestigationSuggestion,
     decision: string
   ) {
-    await api.post("/api/v1/decisions", {
-      patient_id: patientId,
-      suggestion_type: s.rule_name,
-      rule_id: s.rule_id,
-      rule_version: s.rule_version,
-      decision,
-      reason: reasons[idx] || null,
-    });
-    onDecision();
+    setPending((p) => ({ ...p, [idx]: decision }));
+    setErrors((e) => ({ ...e, [idx]: "" }));
+    setSuccess((v) => ({ ...v, [idx]: "" }));
+
+    try {
+      await api.post("/api/v1/decisions", {
+        patient_id: patientId,
+        suggestion_type: s.rule_name,
+        rule_id: s.rule_id,
+        rule_version: s.rule_version,
+        decision,
+        reason: reasons[idx]?.trim() || null,
+      });
+
+      setSuccess((v) => ({
+        ...v,
+        [idx]: `Decision recorded: ${decision}.`,
+      }));
+      onDecision();
+    } catch {
+      setErrors((e) => ({
+        ...e,
+        [idx]: "Could not save this decision. Please try again.",
+      }));
+    } finally {
+      setPending((p) => {
+        const next = { ...p };
+        delete next[idx];
+        return next;
+      });
+    }
   }
 
   if (suggestions.length === 0) {
     return (
-      <p className="text-sm text-ink-muted">
-        No investigation suggestions available.
-      </p>
+      <div className="rounded-xl border border-dashed border-border bg-bg px-5 py-8 text-center">
+        <p className="text-sm font-medium text-ink">
+          No review suggestions available
+        </p>
+        <p className="mt-1 text-xs text-ink-muted">
+          Suggestions will appear here when supported by the available patient data.
+        </p>
+      </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border">
-      <table className="w-full text-left text-sm">
-        <thead>
-          <tr className="border-b border-border bg-bg text-xs font-medium uppercase tracking-wide text-ink-muted">
-            <th className="px-4 py-2">Test / Check</th>
-            <th className="px-4 py-2">Status</th>
-            <th className="px-4 py-2">Message</th>
-            <th className="px-4 py-2">Source</th>
-            <th className="px-4 py-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {suggestions.map((s, idx) => {
-            const ss = STATUS_STYLES[s.status] ?? STATUS_STYLES.OK;
-            return (
-              <tr key={`${s.rule_id}-${idx}`} className="hover:bg-bg">
-                <td className="px-4 py-3">
-                  <div className="font-medium text-ink">{s.rule_name}</div>
-                  <div className="text-xs text-ink-muted">
-                    {s.rule_id} v{s.rule_version}
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-semibold ${ss.bg} ${ss.text}`}
-                  >
-                    {ss.label}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-xs text-ink">{s.message}</td>
-                <td className="px-4 py-3">
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs text-ink-muted">
+          {suggestions.length} review {suggestions.length === 1 ? "item" : "items"}
+        </p>
+        <p className="text-xs text-ink-muted">
+          Decisions are recorded in the audit log.
+        </p>
+      </div>
+
+      {suggestions.map((s, idx) => {
+        const ss = STATUS_STYLES[s.status] ?? STATUS_STYLES.OK;
+        const busy = Boolean(pending[idx]);
+
+        return (
+          <article
+            key={`${s.rule_id}-${idx}`}
+            className="overflow-hidden rounded-xl border border-border bg-surface transition-shadow hover:shadow-sm"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm font-semibold leading-5 text-ink">
+                  {s.rule_name}
+                </h3>
+                <p className="mt-1 text-xs text-ink-muted">
+                  Rule {s.rule_id} · Version {s.rule_version}
+                </p>
+              </div>
+              <span
+                className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${ss.bg} ${ss.text}`}
+              >
+                {ss.label}
+              </span>
+            </div>
+
+            <div className="grid gap-4 px-4 py-4 sm:px-5 lg:grid-cols-[minmax(0,1fr)_minmax(220px,0.7fr)]">
+              <div className="min-w-0">
+                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
+                  Clinical context
+                </p>
+                <p className="text-sm leading-6 text-ink">{s.message}</p>
+
+                <div className="mt-3">
+                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
+                    Evidence source
+                  </p>
                   {s.source_url ? (
                     <a
                       href={s.source_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-primary hover:underline"
+                      className="inline-flex max-w-full items-center gap-1 break-words text-xs font-medium text-primary hover:underline"
                     >
-                      {s.source_name.slice(0, 30)}…
+                      <span>{s.source_name || "View clinical reference"}</span>
+                      <span aria-hidden="true">↗</span>
                     </a>
                   ) : (
                     <span className="text-xs text-ink-muted">
-                      {s.source_name.slice(0, 30)}
+                      {s.source_name || "No source provided"}
                     </span>
                   )}
-                  <div className="mt-0.5 text-[10px] italic text-ink-muted">
-                    {s.review_status}
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <input
-                    value={reasons[idx] ?? ""}
-                    onChange={(e) =>
-                      setReasons((r) => ({ ...r, [idx]: e.target.value }))
-                    }
-                    placeholder="Reason (optional)"
-                    className="mb-1 w-full rounded border border-border bg-bg px-2 py-1 text-xs outline-none focus:border-primary"
-                  />
-                  <div className="flex gap-1">
-                    {["accept", "defer", "override"].map((d) => (
-                      <button
-                        key={d}
-                        onClick={() => submitDecision(idx, s, d)}
-                        disabled={pending[idx] === d}
-                        className={`rounded px-2 py-0.5 text-xs font-medium capitalize ${
-                          d === "accept"
-                            ? "bg-success/10 text-success hover:bg-success/20"
-                            : d === "defer"
-                            ? "bg-accent-soft text-accent hover:bg-accent/20"
-                            : "bg-danger-soft text-danger hover:bg-danger/20"
-                        }`}
-                      >
-                        {d}
-                      </button>
-                    ))}
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-border bg-bg/60 p-3">
+                <label
+                  htmlFor={`review-reason-${idx}`}
+                  className="mb-1.5 block text-xs font-medium text-ink"
+                >
+                  Clinician note <span className="font-normal text-ink-muted">(optional)</span>
+                </label>
+                <textarea
+                  id={`review-reason-${idx}`}
+                  value={reasons[idx] ?? ""}
+                  onChange={(e) =>
+                    setReasons((r) => ({ ...r, [idx]: e.target.value }))
+                  }
+                  placeholder="Add a reason or review note…"
+                  rows={2}
+                  disabled={busy}
+                  className="w-full resize-y rounded-lg border border-border bg-surface px-3 py-2 text-xs text-ink outline-none placeholder:text-ink-muted focus:border-primary"
+                />
+
+                <p className="mb-2 mt-3 text-[11px] font-medium text-ink-muted">
+                  Record your decision
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["accept", "defer", "override"] as const).map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => void submitDecision(idx, s, d)}
+                      disabled={busy}
+                      className={`min-h-9 rounded-lg border px-2 py-2 text-xs font-semibold capitalize transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                        d === "accept"
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                          : d === "defer"
+                          ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                          : "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                      }`}
+                    >
+                      {busy && pending[idx] === d
+                        ? "Saving…"
+                        : d === "override"
+                        ? "Override"
+                        : d === "accept"
+                        ? "Accept"
+                        : "Defer"}
+                    </button>
+                  ))}
+                </div>
+
+                {errors[idx] && (
+                  <p role="alert" className="mt-2 text-xs text-danger">
+                    {errors[idx]}
+                  </p>
+                )}
+                {success[idx] && (
+                  <p role="status" className="mt-2 text-xs text-success">
+                    {success[idx]}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="border-t border-border bg-bg/50 px-4 py-2 sm:px-5">
+              <p className="text-[11px] text-ink-muted">
+                Review status: {s.review_status || "Pending clinician review"}
+              </p>
+            </div>
+          </article>
+        );
+      })}
     </div>
   );
 }
@@ -640,7 +720,7 @@ export function GlucoTwinPage() {
     <AppLayout title="GlucoTwin — Diabetes Digital Twin">
       {/* Prototype safety banner */}
       <div className="mb-4 flex items-center gap-2 rounded-lg border border-danger/30 bg-danger-soft px-4 py-2 text-xs font-medium text-danger">
-        ⚠ SYNTHETIC DEMO DATA · PROTOTYPE — NOT FOR CLINICAL USE. Predictions are experimental and
+        Prototype insights · Not for clinical decision-making. Predictions are experimental and
         must not be used to diagnose or guide treatment. Verify the data source
         and readings. All decisions remain with the clinician.
       </div>

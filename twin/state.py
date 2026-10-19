@@ -141,6 +141,47 @@ def _risk_band(prob: float | None) -> str:
     return "low"
 
 
+
+def _load_lab_dates(patient_id: str) -> dict[str, str | None]:
+    """Read latest available lab dates without modifying source data."""
+    lab_path = Path(__file__).resolve().parent.parent / "data" / "lab_results.parquet"
+    result = {
+        "last_hba1c_date": None,
+        "last_egfr_date": None,
+        "last_lipid_date": None,
+        "last_eye_date": None,
+        "last_foot_date": None,
+    }
+    if not lab_path.exists():
+        return result
+
+    try:
+        labs = pd.read_parquet(lab_path)
+        required = {"patient_id", "test_code", "performed_date"}
+        if not required.issubset(labs.columns):
+            return result
+
+        labs = labs[labs["patient_id"].astype(str) == str(patient_id)].copy()
+        labs["test_code"] = labs["test_code"].astype(str).str.strip().str.lower()
+        labs["performed_date"] = pd.to_datetime(labs["performed_date"], errors="coerce")
+        labs = labs.dropna(subset=["performed_date"])
+
+        groups = {
+            "last_hba1c_date": {"hba1c", "hb a1c"},
+            "last_egfr_date": {"egfr"},
+            "last_lipid_date": {"hdl", "ldl", "tg", "triglycerides"},
+        }
+        for field, codes in groups.items():
+            rows = labs[labs["test_code"].isin(codes)]
+            if not rows.empty:
+                result[field] = rows["performed_date"].max().date().isoformat()
+    except Exception:
+        import logging
+        logging.exception("Could not load lab dates for %s", patient_id)
+
+    return result
+
+
 def update_twin_state(
     patient_id: str,
     wearable_df: pd.DataFrame,
@@ -219,7 +260,10 @@ def update_twin_state(
         if not (np.isnan(early) or np.isnan(late)):
             hrv_trend = 1 if late > early + 2 else (-1 if late < early - 2 else 0)
 
-    ld = lab_dates or {}
+    ld = _load_lab_dates(patient_id)
+    if lab_dates:
+        ld.update({k: v for k, v in lab_dates.items() if v})
+
 
     state = {
         "patient_id":          patient_id,
