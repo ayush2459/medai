@@ -1,17 +1,19 @@
-"""
-Seed script: creates a demo admin user, a batch of realistic patients, and
-downstream clinical data (diagnoses, lab results, vitals, admission history)
-so both the Executive Dashboard and the ICU risk model have something
-meaningful to work with.
 
-IMPORTANT: The correlations below (higher severity -> more abnormal vitals ->
-higher ICU probability) are hand-constructed for demo purposes so the ML model
-has learnable signal. This is NOT real epidemiological data. Treat any model
-trained on it as a working prototype, not a validated clinical tool.
+"""
+Seed script: creates a demo admin user, synthetic patients, and
+clinical data (diagnoses, lab results, vitals, and admission history)
+for the Executive Dashboard and ICU risk model.
+
+IMPORTANT:
+- The generated records are synthetic demonstration data.
+- This is NOT real epidemiological data or a clinically validated model.
+- Existing patients and users are preserved.
+- If admission events already exist, seeding is skipped to avoid duplicates.
 
 Usage:
-    python3 -m app.seed
+    python -m app.seed
 """
+
 import math
 import random
 from datetime import date, datetime, timedelta, timezone
@@ -22,8 +24,18 @@ from app.models.clinical_events import AdmissionEvent, VitalSign
 from app.models.patient import Diagnosis, Gender, LabResult, Patient
 from app.models.user import User, UserRole
 
-WARDS = ["ICU", "General A", "General B", "Cardiology", "Pediatrics", "Maternity"]
-NON_ICU_WARDS = [w for w in WARDS if w != "ICU"]
+
+WARDS = [
+    "ICU",
+    "General A",
+    "General B",
+    "Cardiology",
+    "Pediatrics",
+    "Maternity",
+]
+
+NON_ICU_WARDS = [ward for ward in WARDS if ward != "ICU"]
+
 DIAGNOSES = [
     ("E11", "Type 2 Diabetes Mellitus"),
     ("I10", "Essential Hypertension"),
@@ -33,6 +45,7 @@ DIAGNOSES = [
     ("J18", "Pneumonia"),
     ("K21", "Gastroesophageal Reflux Disease"),
 ]
+
 LAB_TESTS = [
     ("Hemoglobin", "g/dL", (12.0, 16.0)),
     ("White Blood Cell Count", "10^3/uL", (4.0, 11.0)),
@@ -41,24 +54,43 @@ LAB_TESTS = [
     ("Potassium", "mmol/L", (3.5, 5.0)),
     ("Glucose", "mg/dL", (70, 140)),
 ]
-FIRST_NAMES = ["James", "Mary", "Robert", "Patricia", "John", "Linda", "Michael", "Priya", "Arjun", "Fatima"]
-LAST_NAMES = ["Smith", "Johnson", "Williams", "Sharma", "Khan", "Garcia", "Brown", "Davis", "Patel", "Wilson"]
+
+FIRST_NAMES = [
+    "James", "Mary", "Robert", "Patricia", "John",
+    "Linda", "Michael", "Priya", "Arjun", "Fatima",
+]
+
+LAST_NAMES = [
+    "Smith", "Johnson", "Williams", "Sharma", "Khan",
+    "Garcia", "Brown", "Davis", "Patel", "Wilson",
+]
 
 
 def sigmoid(x: float) -> float:
+    """Convert a logit value into a probability."""
     return 1 / (1 + math.exp(-x))
 
 
-def gauss_clamped(mean: float, sd: float, lo: float, hi: float) -> float:
+def gauss_clamped(
+    mean: float,
+    sd: float,
+    lo: float,
+    hi: float,
+) -> float:
+    """Generate a normally distributed value within given limits."""
     return max(lo, min(hi, random.gauss(mean, sd)))
 
 
 def seed() -> None:
+    """Create demo data without deleting existing patient records."""
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
+
     try:
+        # Ensure a demo admin exists for synthetic records.
         admin_email = "admin@medintel.ai"
         admin = db.query(User).filter(User.email == admin_email).first()
+
         if admin is None:
             admin = User(
                 email=admin_email,
@@ -69,25 +101,44 @@ def seed() -> None:
             db.add(admin)
             db.commit()
             db.refresh(admin)
-            print(f"Created demo admin user: {admin_email} / changeme123")
+            print(f"Created demo admin user: {admin_email}")
         else:
             print(f"Demo admin user already exists: {admin_email}")
 
+        # Check existing data before adding the synthetic cohort.
         existing_count = db.query(Patient).count()
-        if existing_count > 0:
-            print(f"Patients table already has {existing_count} rows - skipping full seed.")
-            print("Drop the DB volume (docker compose down -v && up -d) if you want a completely fresh seed.")
+        existing_admission_count = db.query(AdmissionEvent).count()
+
+        if existing_admission_count > 0:
+            print(
+                f"Found {existing_admission_count} admission events. "
+                "Skipping seed to avoid duplicate demo data."
+            )
             return
 
+        if existing_count > 0:
+            print(
+                f"Preserving {existing_count} existing patient(s) "
+                "and adding the synthetic demo cohort."
+            )
+
+        # Fixed seed makes the generated demo cohort reproducible.
         random.seed(42)
+
         admission_events_created = 0
         patients_created = 0
 
         for i in range(150):
             days_ago = random.randint(0, 13)
-            created_at = datetime.now(timezone.utc) - timedelta(days=days_ago, hours=random.randint(0, 23))
+            created_at = datetime.now(timezone.utc) - timedelta(
+                days=days_ago,
+                hours=random.randint(0, 23),
+            )
+
             is_admitted = random.random() < 0.35
-            dob = date.today() - timedelta(days=random.randint(365 * 1, 365 * 90))
+            dob = date.today() - timedelta(
+                days=random.randint(365, 365 * 90)
+            )
             age = date.today().year - dob.year
 
             severity = random.betavariate(2, 5)
@@ -102,16 +153,22 @@ def seed() -> None:
                 ward=random.choice(WARDS) if is_admitted else None,
                 created_by=admin.id,
             )
+
             db.add(patient)
             db.flush()
+
             patient.created_at = created_at
             patient.updated_at = created_at
 
+            # Generate diagnoses.
             diagnosis_count = 0
+
             if random.random() < 0.7:
                 diagnosis_count = random.randint(1, 2)
+
                 for _ in range(diagnosis_count):
                     icd_code, description = random.choice(DIAGNOSES)
+
                     db.add(
                         Diagnosis(
                             patient_id=patient.id,
@@ -121,15 +178,25 @@ def seed() -> None:
                         )
                     )
 
+            # Generate laboratory results.
             abnormal_lab_count = 0
+
             for _ in range(random.randint(0, 4)):
                 test_name, unit, (lo, hi) = random.choice(LAB_TESTS)
-                is_abnormal = random.random() < (0.15 + 0.55 * severity)
+
+                is_abnormal = random.random() < (
+                    0.15 + 0.55 * severity
+                )
+
                 if is_abnormal:
-                    value = round(random.choice([lo * 0.7, hi * 1.4]), 1)
+                    value = round(
+                        random.choice([lo * 0.7, hi * 1.4]),
+                        1,
+                    )
                     abnormal_lab_count += 1
                 else:
                     value = round(random.uniform(lo, hi), 1)
+
                 db.add(
                     LabResult(
                         patient_id=patient.id,
@@ -141,11 +208,15 @@ def seed() -> None:
                     )
                 )
 
+            # Generate admission history.
             num_admissions = random.choice([0, 0, 1, 1, 1, 2])
-            for a in range(num_admissions):
+
+            for admission_index in range(num_admissions):
                 days_back = random.randint(1, 179)
+
                 admitted_at = datetime.now(timezone.utc) - timedelta(
-                    days=days_back, hours=random.randint(0, 23)
+                    days=days_back,
+                    hours=random.randint(0, 23),
                 )
 
                 icu_logit = (
@@ -156,28 +227,62 @@ def seed() -> None:
                     + 3.8 * severity
                     + random.gauss(0, 0.6)
                 )
-                admitted_to_icu = random.random() < sigmoid(icu_logit)
 
+                admitted_to_icu = (
+                    random.random() < sigmoid(icu_logit)
+                )
+
+                # Generate synthetic vitals based on the demo label.
                 if admitted_to_icu:
-                    heart_rate = round(gauss_clamped(108, 14, 60, 160))
-                    systolic_bp = round(gauss_clamped(94, 16, 60, 160))
-                    diastolic_bp = round(gauss_clamped(58, 10, 35, 100))
-                    respiratory_rate = round(gauss_clamped(27, 4, 12, 40))
-                    temperature_c = round(gauss_clamped(38.4, 0.9, 35.5, 41.0), 1)
-                    spo2 = round(gauss_clamped(89, 4, 75, 100))
+                    heart_rate = round(
+                        gauss_clamped(108, 14, 60, 160)
+                    )
+                    systolic_bp = round(
+                        gauss_clamped(94, 16, 60, 160)
+                    )
+                    diastolic_bp = round(
+                        gauss_clamped(58, 10, 35, 100)
+                    )
+                    respiratory_rate = round(
+                        gauss_clamped(27, 4, 12, 40)
+                    )
+                    temperature_c = round(
+                        gauss_clamped(38.4, 0.9, 35.5, 41.0),
+                        1,
+                    )
+                    spo2 = round(
+                        gauss_clamped(89, 4, 75, 100)
+                    )
                     ward = "ICU"
                     los_hours = gauss_clamped(120, 45, 12, 300)
+
                 else:
-                    heart_rate = round(gauss_clamped(78, 11, 50, 130))
-                    systolic_bp = round(gauss_clamped(121, 12, 85, 170))
-                    diastolic_bp = round(gauss_clamped(78, 8, 50, 110))
-                    respiratory_rate = round(gauss_clamped(16, 2.5, 10, 26))
-                    temperature_c = round(gauss_clamped(37.0, 0.5, 35.5, 39.0), 1)
-                    spo2 = round(gauss_clamped(97, 1.8, 90, 100))
+                    heart_rate = round(
+                        gauss_clamped(78, 11, 50, 130)
+                    )
+                    systolic_bp = round(
+                        gauss_clamped(121, 12, 85, 170)
+                    )
+                    diastolic_bp = round(
+                        gauss_clamped(78, 8, 50, 110)
+                    )
+                    respiratory_rate = round(
+                        gauss_clamped(16, 2.5, 10, 26)
+                    )
+                    temperature_c = round(
+                        gauss_clamped(37.0, 0.5, 35.5, 39.0),
+                        1,
+                    )
+                    spo2 = round(
+                        gauss_clamped(97, 1.8, 90, 100)
+                    )
                     ward = random.choice(NON_ICU_WARDS)
                     los_hours = gauss_clamped(48, 22, 4, 140)
 
-                vitals_time = admitted_at + timedelta(minutes=random.randint(5, 45))
+                vitals_time = admitted_at + timedelta(
+                    minutes=random.randint(5, 45)
+                )
+
                 db.add(
                     VitalSign(
                         patient_id=patient.id,
@@ -191,9 +296,14 @@ def seed() -> None:
                     )
                 )
 
-                is_latest_admission = a == num_admissions - 1
-                discharged_at = None if (is_latest_admission and is_admitted) else admitted_at + timedelta(
-                    hours=los_hours
+                is_latest_admission = (
+                    admission_index == num_admissions - 1
+                )
+
+                discharged_at = (
+                    None
+                    if is_latest_admission and is_admitted
+                    else admitted_at + timedelta(hours=los_hours)
                 )
 
                 db.add(
@@ -203,16 +313,35 @@ def seed() -> None:
                         discharged_at=discharged_at,
                         admitted_to_icu=admitted_to_icu,
                         ward=ward,
-                        admission_reason=random.choice(DIAGNOSES)[1] if diagnosis_count else "Routine admission",
+                        admission_reason=(
+                            random.choice(DIAGNOSES)[1]
+                            if diagnosis_count
+                            else "Routine admission"
+                        ),
                     )
                 )
+
                 admission_events_created += 1
 
             patients_created += 1
 
+        # Commit all synthetic cohort records together.
         db.commit()
+
         print(f"Seeded {patients_created} demo patients.")
-        print(f"Seeded {admission_events_created} admission events (with vitals) for ICU-risk model training.")
+        print(
+            f"Seeded {admission_events_created} admission events "
+            "with vitals for ICU-risk model training."
+        )
+        print(
+            "Existing patient records were preserved. "
+            "All generated records are synthetic demo data."
+        )
+
+    except Exception:
+        db.rollback()
+        raise
+
     finally:
         db.close()
 

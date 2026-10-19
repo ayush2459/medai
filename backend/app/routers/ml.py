@@ -20,36 +20,28 @@ router = APIRouter(prefix="/api/ml", tags=["ml"])
 def get_icu_risk(
     patient_id: uuid.UUID,
     db: Session = Depends(get_db),
-    _current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.DOCTOR, UserRole.NURSE)),
+    _current_user: User = Depends(
+        require_roles(UserRole.ADMIN, UserRole.DOCTOR, UserRole.NURSE)
+    ),
 ):
-    try:
-        patient = db.get(Patient, patient_id)
-        if patient is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
+    patient = db.get(Patient, patient_id)
 
-        feature_row = build_feature_row(db, patient, datetime.now(timezone.utc))
-
-        try:
-            result = predict_icu_risk(feature_row)
-        except ModelNotTrainedError as exc:
-            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
-
-        return IcuRiskResponse(patient_id=patient_id, **result)
-    except HTTPException:
-        raise
-    except Exception:
-        # Demo mode: return mock ICU risk score
-        risk_level = random.choice(["low", "medium", "high"])
-        risk_score = {"low": 0.15, "medium": 0.45, "high": 0.75}[risk_level]
-        return IcuRiskResponse(
-            patient_id=patient_id,
-            risk_score=risk_score,
-            risk_level=risk_level,
-            contributing_factors={
-                "age": "Above 65",
-                "heart_rate_bpm": "Elevated (90-100)",
-                "systolic_bp": "Stage 1 hypertension",
-                "diagnosis_count": "Multiple comorbidities",
-                "prior_admission_count": "Recent hospital use",
-            },
+    if patient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Patient not found",
         )
+
+    feature_row = build_feature_row(
+        db, patient, datetime.now(timezone.utc)
+    )
+
+    try:
+        result = predict_icu_risk(feature_row)
+    except ModelNotTrainedError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+
+    return IcuRiskResponse(patient_id=patient_id, **result)

@@ -7,6 +7,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { PatientsPage } from "./pages/PatientsPage";
 import { DiseaseAnalyticsPage } from "./pages/DiseaseAnalyticsPage";
 import { GlucoTwinPage } from "./pages/GlucoTwinPage";
+import { ReportsPage } from "./pages/ReportsPage";
 
 function RootRedirect() {
   const { user, isLoading } = useAuth();
@@ -56,6 +57,14 @@ function App() {
         element={
           <ProtectedRoute>
             <PatientsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reports"
+        element={
+          <ProtectedRoute>
+            <ReportsPage />
           </ProtectedRoute>
         }
       />

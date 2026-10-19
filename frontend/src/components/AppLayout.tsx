@@ -15,6 +15,7 @@ const NAV = [
   { to: "/icu-risk", label: "ICU Risk Monitor", icon: "activity" },
   { to: "/glucotwin", label: "GlucoTwin", section: "DIGITAL TWIN", icon: "activity" },
   { to: "/analytics", label: "Disease Analytics", section: "INTELLIGENCE", icon: "chart" },
+  { to: "/reports", label: "Reports", section: "OPERATIONS", icon: "chart" },
 ];
 
 function NavIcon({ name }: { name: string }) {
