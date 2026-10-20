@@ -15,7 +15,6 @@
 | **Members** | [Ayush Gupta] · [Udiksha] · [Honey Priya] · [Vanshika Chauhan] |
 | **Condition** | Type 2 Diabetes Mellitus (India) |
 | **Challenge** | Digital Twin Challenge 2026 — Happiest Health |
-| **Submission deadline** | 20 October 2026, 7:00 PM IST |
 
 ---
 
