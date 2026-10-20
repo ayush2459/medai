@@ -9,7 +9,7 @@
 
 | | |
 |---|---|
-| **Team** | |
+| **Project Name** | GlucoTwin |
 | **College / Incubator** | [MAIT DELHI] |
 | **Team leader** | Ayush Gupta |
 | **Members** | [Ayush Gupta] · [Udiksha] · [Honey Priya] · [Vanshika Chauhan] |
