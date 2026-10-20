@@ -335,8 +335,8 @@ GlucoTwin is a student proof of concept built on synthetic data. It is **not a m
 
 ## Video and Slides
 
-- **Video (20 min):** [Link to be added before submission]
-- **Presentation (PDF/PPT):** [Link to be added before submission]
+- **Video (20 min):** [Watch on YouTube](https://youtu.be/8ifBpL0Z4Fw)
+- **Presentation (PDF/PPT)/Deliverables Link:**[Google Drive](https://drive.google.com/drive/folders/150EZvCwtIJuQJbDOOVukBiysclkDgCUe?usp=sharing)
 - **Architecture diagram:** `docs/ARCHITECTURE.md`
 
 ---
