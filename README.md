@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Team** | [Team Name] |
-| **College / Incubator** | [College Name] |
-| **Team leader** | [Name · email · phone] |
-| **Members** | [Name 1] · [Name 2] · [Name 3] · [Name 4] |
+| **Team** | |
+| **College / Incubator** | [MAIT DELHI] |
+| **Team leader** | Ayush Gupta |
+| **Members** | [Ayush Gupta] · [Udiksha] · [Honey Priya] · [Vanshika Chauhan] |
 | **Condition** | Type 2 Diabetes Mellitus (India) |
 | **Challenge** | Digital Twin Challenge 2026 — Happiest Health |
 | **Submission deadline** | 20 October 2026, 7:00 PM IST |
