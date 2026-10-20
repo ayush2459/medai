@@ -335,14 +335,14 @@ GlucoTwin is a student proof of concept built on synthetic data. It is **not a m
 
 ## Video and Slides
 
-- **Video (20 min):** [Watch on YouTube](https://youtu.be/8ifBpL0Z4Fw)
-- **Presentation (PDF/PPT)/Deliverables Link:**[Google Drive](https://drive.google.com/drive/folders/150EZvCwtIJuQJbDOOVukBiysclkDgCUe?usp=sharing)
+- **Project Demonstration Video:** [Watch on YouTube](https://youtu.be/8ifBpL0Z4Fw)
+- **Presentation and Deliverables:** [Open the shared folder on Google Drive](https://drive.google.com/drive/folders/150EZvCwtIJuQJbDOOVukBiysclkDgCUe?usp=sharing)
 - **Architecture diagram:** `docs/ARCHITECTURE.md`
 
 ---
 Live Link:http://15.252.183.232/login
 
-Login Details:admin@aintel.com/admin123
+Login Details: Demo access is available through the project owner; credentials are not published in this repository.
 
 ## Integrated MedAI Platform
 
