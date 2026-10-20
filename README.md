@@ -341,6 +341,7 @@ GlucoTwin is a student proof of concept built on synthetic data. It is **not a m
 
 ---
 Live Link:http://15.252.183.232/login
+---
 Login Details:admin@aintel.com/admin123
 
 ## Integrated MedAI Platform
